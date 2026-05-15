@@ -22,5 +22,22 @@ Route::middleware(['auth', 'role:owner'])
             ->except(['show']); // Index, Create, Store, Edit, Update, Destroy
     });
 
-// ─── Redirect root ke login ───────────────────────────────
-Route::get('/', fn () => redirect()->route('login'));
+// ─── Routing Cerdas untuk Root (/) ──────────────────────────
+Route::get('/', function () {
+    // 1. Jika belum login, lempar ke halaman login
+    if (!auth()->check()) {
+        return redirect()->route('login');
+    }
+
+    // 2. Jika sudah login, cek rolenya
+    $role = auth()->user()->role;
+
+    // Jika Owner, arahkan ke dashboard Owner
+    if ($role === 'owner') {
+        return redirect()->route('owner.dashboard');
+    }
+
+    // 3. Sementara untuk Admin dan Pelanggan, tampilkan pesan ini
+    // sampai halaman frontend mereka selesai kita buat.
+    return response("Selamat datang, {$role}. Halaman dashboard Anda belum dibuat.");
+});

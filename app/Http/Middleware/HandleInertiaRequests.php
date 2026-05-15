@@ -32,9 +32,19 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
+            
+            // Auth user tersedia di semua halaman
             'auth' => [
                 'user' => $request->user(),
             ],
+            
+            // ✅ Flash message tersedia di semua halaman via usePage().props.flash
+            'flash' => [
+                'success' => session('success'),
+                'error'   => session('error'),
+            ],
+            
+            // Ziggy route wajib ada agar fungsi route() di React/Vue tidak error
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
