@@ -19,9 +19,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        // Daftarkan alias middleware custom kamu di sini
+        // Mendaftarkan alias middleware langsung menggunakan variabel $middleware
         $middleware->alias([
-            'role' => \App\Http\Middleware\EnsureRole::class,
+            'role' => \App\Http\Middleware\CheckRole::class,
         ]);
         
     })
