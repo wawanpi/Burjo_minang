@@ -18,7 +18,7 @@ class AccountController extends Controller
      */
     public function index()
     {
-        $users = User::where('role', 'admin')
+        $users = User::whereIn('role', ['admin', 'pelanggan'])
             ->latest()
             ->get(['id', 'name', 'email', 'role', 'created_at']);
 
@@ -44,18 +44,19 @@ class AccountController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'role'     => ['required', 'string', 'in:admin,pelanggan'],
         ]);
 
         User::create([
             'name'     => $validated['name'],
             'email'    => $validated['email'],
             'password' => Hash::make($validated['password']),
-            'role'     => 'admin', // Owner hanya bisa buat akun admin
+            'role'     => $validated['role'],
         ]);
 
         return redirect()
             ->route('owner.accounts.index')
-            ->with('success', 'Akun admin berhasil ditambahkan.');
+            ->with('success', 'Akun berhasil ditambahkan.');
     }
 
     /**
@@ -82,10 +83,12 @@ class AccountController extends Controller
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'role'     => ['required', 'string', 'in:admin,pelanggan'],
         ]);
 
         $user->name  = $validated['name'];
         $user->email = $validated['email'];
+        $user->role  = $validated['role'];
 
         if (! empty($validated['password'])) {
             $user->password = Hash::make($validated['password']);

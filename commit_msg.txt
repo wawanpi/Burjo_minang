@@ -1,0 +1,7 @@
+﻿Refactor & Fix: Sinkronisasi UI dan standardisasi panel Owner
+
+- Refactor & Fix: Memperbaiki blank screen pada halaman Ulasan dan Laporan dengan menyinkronkan format data response backend dengan struktur map frontend.
+- Refactor: Menstandarisasi penamaan file halaman menjadi Index.tsx sesuai best practice Inertia.js.
+- Fix: Menghapus file layout yang duplikat/konflik (OwnerLayout.tsx) dan memfokuskan integrasi seluruh halaman ke layout utama OwnerLayout.jsx.
+- Chore: Menghapus opsi ignoreDeprecations yang invalid pada konfigurasi tsconfig.json.
+- Feat: Menghubungkan seluruh ekosistem panel Owner (Manajemen Akun, Dashboard, Ulasan, dan Laporan) agar terintegrasi penuh dan berjalan tanpa error.

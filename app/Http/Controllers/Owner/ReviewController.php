@@ -1,17 +1,17 @@
 <?php
 
-namespace App\Http\Controllers\API;
+namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ReviewResource;
 use App\Models\Review;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ReviewController extends Controller
 {
     // GET /api/owner/reviews?menu_id=1&rating=5
-    public function index(Request $request): JsonResponse
+    public function index(Request $request)
     {
         $request->validate([
             'menu_id' => ['nullable', 'integer', 'exists:menus,id'],
@@ -26,16 +26,11 @@ class ReviewController extends Controller
                 $q->where('rating', $request->rating)
             )
             ->latest('tanggal_ulasan')
-            ->paginate(20);
+            ->get();
 
-        return response()->json([
-            'data' => ReviewResource::collection($reviews),
-            'meta' => [
-                'total'        => $reviews->total(),
-                'current_page' => $reviews->currentPage(),
-                'last_page'    => $reviews->lastPage(),
-                'rata_rating'  => round(Review::avg('rating'), 2),
-            ],
+        return Inertia::render('Owner/Reviews/Index', [
+            'reviews' => $reviews,
+            'filters' => $request->only(['rating']),
         ]);
     }
 }

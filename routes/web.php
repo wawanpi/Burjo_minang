@@ -2,24 +2,37 @@
 
 use App\Http\Controllers\Owner\AccountController;
 use App\Http\Controllers\Owner\DashboardController;
+use App\Http\Controllers\Owner\LaporanController; // Tambahan untuk Laporan
+use App\Http\Controllers\Owner\ReviewController;  // Tambahan untuk Reviews
 use Illuminate\Support\Facades\Route;
 
 // ─── Route Publik (Breeze) ────────────────────────────────
+// Ini sudah secara otomatis menangani rute '/login' dari router.tsx Claude
 require __DIR__.'/auth.php';
 
 // ─── Route Owner ─────────────────────────────────────────
+// Ini menggantikan peran <OwnerRoute /> (guard) dari router.tsx Claude
 Route::middleware(['auth', 'role:owner'])
     ->prefix('owner')
     ->name('owner.')
     ->group(function () {
 
-        // Dashboard
+        // Dashboard (Sama dengan path: '/owner/dashboard')
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('dashboard');
 
-        // Manajemen Akun Admin
+        // Manajemen Laporan (Sama dengan path: '/owner/laporan')
+        Route::get('/laporan', [LaporanController::class, 'index'])
+            ->name('laporan');
+
+        // Manajemen Ulasan/Reviews (Sama dengan path: '/owner/reviews')
+        Route::get('/reviews', [ReviewController::class, 'index'])
+            ->name('reviews');
+
+        // Manajemen Akun Admin/Karyawan (Menggantikan path: '/owner/users')
+        // Kamu menggunakan 'accounts' di sini yang mana adalah praktik penamaan yang sangat bagus
         Route::resource('accounts', AccountController::class)
-            ->except(['show']); // Index, Create, Store, Edit, Update, Destroy
+            ->except(['show']); // Menghasilkan route untuk Index, Create, Store, Edit, Update, Destroy
     });
 
 // ─── Routing Cerdas untuk Root (/) ──────────────────────────

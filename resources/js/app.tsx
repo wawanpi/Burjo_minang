@@ -11,8 +11,9 @@ createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) =>
         resolvePageComponent(
-            `./Pages/${name}.jsx`,
-            import.meta.glob('./Pages/**/*.jsx'),
+            // Ubah ekstensi ini agar Inertia mencari file .tsx atau .jsx
+            `./Pages/${name}.tsx`,
+            import.meta.glob('./Pages/**/*.[jt]sx'), 
         ),
     setup({ el, App, props }) {
         if (import.meta.env.SSR) {
