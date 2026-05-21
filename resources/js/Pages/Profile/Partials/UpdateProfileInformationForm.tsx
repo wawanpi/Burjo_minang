@@ -1,24 +1,28 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import Button from '@/Components/ui/Button';
+import Input from '@/Components/ui/Input';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
+import { FormEventHandler } from 'react';
 
 export default function UpdateProfileInformation({
     mustVerifyEmail,
     status,
     className = '',
+}: {
+    mustVerifyEmail?: boolean;
+    status?: string;
+    className?: string;
 }) {
-    const user = usePage().props.auth.user;
+    const user = usePage<any>().props.auth.user;
 
     const { data, setData, patch, errors, processing, recentlySuccessful } =
         useForm({
             name: user.name,
             email: user.email,
+            no_hp: user.no_hp || '',
         });
 
-    const submit = (e) => {
+    const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
         patch(route('profile.update'));
@@ -37,37 +41,41 @@ export default function UpdateProfileInformation({
             </header>
 
             <form onSubmit={submit} className="mt-6 space-y-6">
-                <div>
-                    <InputLabel htmlFor="name" value="Name" />
+                <Input
+                    label="Name"
+                    id="name"
+                    value={data.name}
+                    onChange={(e) => setData('name', e.target.value)}
+                    required
+                    autoFocus
+                    autoComplete="name"
+                    error={errors.name}
+                />
 
-                    <TextInput
-                        id="name"
-                        className="mt-1 block w-full"
-                        value={data.name}
-                        onChange={(e) => setData('name', e.target.value)}
-                        required
-                        isFocused
-                        autoComplete="name"
-                    />
+                <Input
+                    label="Email"
+                    id="email"
+                    type="email"
+                    value={data.email}
+                    onChange={(e) => setData('email', e.target.value)}
+                    required
+                    autoComplete="username"
+                    error={errors.email}
+                />
 
-                    <InputError className="mt-2" message={errors.name} />
-                </div>
-
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
-                        id="email"
-                        type="email"
-                        className="mt-1 block w-full"
-                        value={data.email}
-                        onChange={(e) => setData('email', e.target.value)}
-                        required
-                        autoComplete="username"
-                    />
-
-                    <InputError className="mt-2" message={errors.email} />
-                </div>
+                <Input
+                    label="Nomor HP"
+                    id="no_hp"
+                    type="tel"
+                    value={data.no_hp}
+                    onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9+]/g, '');
+                        setData('no_hp', val);
+                    }}
+                    required
+                    error={errors.no_hp}
+                    placeholder="081234567890"
+                />
 
                 {mustVerifyEmail && user.email_verified_at === null && (
                     <div>
@@ -77,7 +85,7 @@ export default function UpdateProfileInformation({
                                 href={route('verification.send')}
                                 method="post"
                                 as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ml-1"
                             >
                                 Click here to re-send the verification email.
                             </Link>
@@ -93,7 +101,7 @@ export default function UpdateProfileInformation({
                 )}
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+                    <Button disabled={processing} type="submit">Save</Button>
 
                     <Transition
                         show={recentlySuccessful}

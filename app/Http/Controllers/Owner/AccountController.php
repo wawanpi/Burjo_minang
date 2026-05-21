@@ -14,11 +14,11 @@ use Inertia\Inertia;
 class AccountController extends Controller
 {
     /**
-     * Tampilkan daftar semua akun admin.
+     * Tampilkan daftar semua akun kasir.
      */
     public function index()
     {
-        $users = User::whereIn('role', ['admin', 'pelanggan'])
+        $users = User::whereIn('role', ['kasir', 'pelanggan'])
             ->latest()
             ->get(['id', 'name', 'email', 'role', 'created_at']);
 
@@ -36,20 +36,22 @@ class AccountController extends Controller
     }
 
     /**
-     * Simpan akun admin baru ke database.
+     * Simpan akun kasir baru ke database.
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
+            'no_hp'    => ['required', 'string', 'max:15', 'unique:users,no_hp', 'regex:/^(?:\+62|62|0)8[1-9][0-9]{7,11}$/'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role'     => ['required', 'string', 'in:admin,pelanggan'],
+            'role'     => ['required', 'string', 'in:kasir,pelanggan'],
         ]);
 
         User::create([
             'name'     => $validated['name'],
             'email'    => $validated['email'],
+            'no_hp'    => $validated['no_hp'],
             'password' => Hash::make($validated['password']),
             'role'     => $validated['role'],
         ]);
@@ -62,39 +64,41 @@ class AccountController extends Controller
     /**
      * Tampilkan form edit akun.
      */
-    public function edit(User $user)
+    public function edit(User $account)
     {
         // Pastikan owner tidak bisa edit sesama owner
-        abort_if($user->role === 'owner', 403);
+        abort_if($account->role === 'owner', 403);
 
         return Inertia::render('Owner/Accounts/Edit', [
-            'user' => $user->only('id', 'name', 'email', 'role'),
+            'user' => $account->only('id', 'name', 'email', 'role'),
         ]);
     }
 
     /**
-     * Update data akun admin.
+     * Update data akun kasir.
      */
-    public function update(Request $request, User $user)
+    public function update(Request $request, User $account)
     {
-        abort_if($user->role === 'owner', 403);
+        abort_if($account->role === 'owner', 403);
 
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'email'    => ['required', 'email', 'max:255', Rule::unique('users')->ignore($account->id)],
+            'no_hp'    => ['required', 'string', 'max:15', Rule::unique('users')->ignore($account->id), 'regex:/^(?:\+62|62|0)8[1-9][0-9]{7,11}$/'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-            'role'     => ['required', 'string', 'in:admin,pelanggan'],
+            'role'     => ['required', 'string', 'in:kasir,pelanggan'],
         ]);
 
-        $user->name  = $validated['name'];
-        $user->email = $validated['email'];
-        $user->role  = $validated['role'];
+        $account->name  = $validated['name'];
+        $account->email = $validated['email'];
+        $account->no_hp = $validated['no_hp'];
+        $account->role  = $validated['role'];
 
         if (! empty($validated['password'])) {
-            $user->password = Hash::make($validated['password']);
+            $account->password = Hash::make($validated['password']);
         }
 
-        $user->save();
+        $account->save();
 
         return redirect()
             ->route('owner.accounts.index')
@@ -102,13 +106,13 @@ class AccountController extends Controller
     }
 
     /**
-     * Hapus akun admin dari database.
+     * Hapus akun kasir dari database.
      */
-    public function destroy(User $user)
+    public function destroy(User $account)
     {
-        abort_if($user->role === 'owner', 403);
+        abort_if($account->role === 'owner', 403);
 
-        $user->delete();
+        $account->delete();
 
         return redirect()
             ->route('owner.accounts.index')

@@ -1,4 +1,11 @@
-export default function StatCard({ title, value, icon, color = "amber" }) {
+import { ReactNode } from "react";
+
+export default function StatCard({ title, value, icon, color = "amber" }: {
+    title: string;
+    value: string | number;
+    icon: ReactNode;
+    color?: "amber" | "green" | "blue" | "red";
+}) {
     const colorMap = {
         amber:  { bg: "bg-amber-50",  icon: "bg-amber-100 text-amber-700",  text: "text-amber-700"  },
         green:  { bg: "bg-green-50",  icon: "bg-green-100 text-green-700",  text: "text-green-700"  },

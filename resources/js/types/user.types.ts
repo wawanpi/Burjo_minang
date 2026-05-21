@@ -1,12 +1,13 @@
 // src/types/user.types.ts
 
-export type UserRole = 'owner' | 'admin' | 'pelanggan';
+export type UserRole = 'owner' | 'kasir' | 'pelanggan';
 
 // Sesuai kolom tabel users + shape UserResource.php
 export interface User {
   id: number;
   name: string;
   email: string;
+  no_hp: string;
   role: UserRole;
   created_at: string; // ISO 8601
 }
@@ -15,8 +16,9 @@ export interface User {
 export interface CreateUserPayload {
   name: string;
   email: string;
+  no_hp: string;
   password: string;
-  role: Extract<UserRole, 'admin' | 'pelanggan'>;
+  role: Extract<UserRole, 'kasir' | 'pelanggan'>;
 }
 
 // Payload untuk PUT /owner/users/:id
@@ -24,6 +26,7 @@ export interface CreateUserPayload {
 export interface UpdateUserPayload {
   name?: string;
   email?: string;
+  no_hp?: string;
   password?: string;
-  role?: Extract<UserRole, 'admin' | 'pelanggan'>;
+  role?: Extract<UserRole, 'kasir' | 'pelanggan'>;
 }

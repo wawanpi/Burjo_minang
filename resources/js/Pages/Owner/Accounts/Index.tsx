@@ -20,9 +20,10 @@ export default function Index({ users }: Props) {
   const { data, setData, post, put, processing, errors, reset, clearErrors } = useForm({
     name: '',
     email: '',
+    no_hp: '',
     password: '',
     password_confirmation: '',
-    role: 'admin',
+    role: 'kasir',
   });
 
   // ─── Handlers ─────────────────────────────────────────────────────────────
@@ -39,6 +40,7 @@ export default function Index({ users }: Props) {
     setData({
       name: user.name,
       email: user.email,
+      no_hp: user.no_hp || '',
       password: '',
       password_confirmation: '',
       role: user.role,
@@ -84,7 +86,7 @@ export default function Index({ users }: Props) {
           <div>
             <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Manajemen Akun</h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Kelola akun admin dan pelanggan
+              Kelola akun kasir dan pelanggan
             </p>
           </div>
           <Button onClick={handleOpenCreate}>+ Tambah Pengguna</Button>

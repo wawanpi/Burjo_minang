@@ -18,6 +18,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'no_hp',
         'password',
         'role',
     ];
@@ -66,10 +67,10 @@ class User extends Authenticatable
     }
 
     /**
-     * Helper: Cek role admin.
+     * Helper: Cek role kasir.
      */
-    public function isAdmin(): bool
+    public function iskasir(): bool
     {
-        return $this->role === 'admin';
+        return $this->role === 'kasir';
     }
 }

@@ -49,6 +49,21 @@ const UserFormModal = ({
         />
 
         <Input
+          label="Nomor HP"
+          id="no_hp"
+          type="tel"
+          name="no_hp"
+          value={data.no_hp}
+          onChange={(e) => {
+            const val = e.target.value.replace(/[^0-9+]/g, '');
+            setData('no_hp', val);
+          }}
+          error={errors.no_hp}
+          placeholder="081234567890"
+          required
+        />
+
+        <Input
           label={isEditMode ? 'Password Baru (opsional)' : 'Password'}
           type="password"
           placeholder="Minimal 8 karakter"
@@ -79,7 +94,7 @@ const UserFormModal = ({
             onChange={(e) => setData('role', e.target.value)}
             required
           >
-            <option value="admin">Admin / Kasir</option>
+            <option value="kasir">Kasir</option>
             <option value="pelanggan">Pelanggan</option>
           </select>
         </div>

@@ -15,7 +15,7 @@ class StoreUserRequest extends FormRequest
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'email', 'unique:users,email'],
             'password' => ['required', Password::min(8)],
-            'role'     => ['required', 'in:admin,pelanggan'], // owner tidak bisa dibuat via API
+            'role'     => ['required', 'in:kasir,pelanggan'], // owner tidak bisa dibuat via API
         ];
     }
 }

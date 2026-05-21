@@ -5,7 +5,7 @@ import Button from '@/Components/ui/Button';
 
 // Helper: mapping role → warna badge
 const roleBadgeVariant = (role: User['role']) => {
-  const map = { owner: 'info', admin: 'warning', pelanggan: 'neutral' } as const;
+  const map = { owner: 'info', kasir: 'warning', pelanggan: 'neutral' } as const;
   return map[role] ?? 'neutral';
 };
 

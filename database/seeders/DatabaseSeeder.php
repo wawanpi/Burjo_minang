@@ -21,12 +21,12 @@ class DatabaseSeeder extends Seeder
             'role'     => 'owner',
         ]);
 
-        // 2. Buat akun Admin
+        // 2. Buat akun kasir
         User::create([
-            'name'     => 'Admin Satu',
-            'email'    => 'admin@burjominang.com',
+            'name'     => 'kasir Satu',
+            'email'    => 'kasir@burjominang.com',
             'password' => Hash::make('password123'),
-            'role'     => 'admin',
+            'role'     => 'kasir',
         ]);
 
         // 3. Buat akun Pelanggan

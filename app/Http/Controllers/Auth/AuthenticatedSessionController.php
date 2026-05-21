@@ -41,7 +41,7 @@ class AuthenticatedSessionController extends Controller
             return redirect()->intended(route('owner.dashboard', absolute: false));
         }
 
-        // Sementara untuk admin dan pelanggan arahkan ke halaman utama '/'
+        // Sementara untuk kasir dan pelanggan arahkan ke halaman utama '/'
         // Nanti bisa kamu sesuaikan lagi kalau route mereka sudah dibuat
         return redirect()->intended('/');
     }
