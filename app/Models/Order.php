@@ -11,30 +11,34 @@ class Order extends Model
 
     protected $fillable = [
         'user_id',
-        'tanggal_pesan',
         'total_harga',
-        'status_pembayaran',
-        'metode_pembayaran',
-        'payment_token',
-        'transaction_id',
-        'payment_url',
+        'status_pesanan',
+        'tanggal_pesan',
     ];
 
     protected function casts(): array
     {
         return [
-            'tanggal_pesan' => 'datetime',
             'total_harga'   => 'decimal:2',
+            'tanggal_pesan' => 'datetime',
         ];
     }
 
+    // Relasi: Order milik satu User (pemesan)
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function items()
+    // Relasi: Satu Order memiliki banyak OrderItem (detail pesanan)
+    public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    // Relasi: Satu Order memiliki satu Payment (data pembayaran)
+    public function payment()
+    {
+        return $this->hasOne(Payment::class);
     }
 }

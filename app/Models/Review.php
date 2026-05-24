@@ -25,11 +25,13 @@ class Review extends Model
         ];
     }
 
+    // Relasi: Review milik satu User (pemberi ulasan)
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
+    // Relasi: Review merujuk ke satu Menu (menu yang diulas)
     public function menu()
     {
         return $this->belongsTo(Menu::class);

@@ -11,14 +11,10 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->timestamp('tanggal_pesan')->nullable()->useCurrent();
             $table->decimal('total_harga', 10, 2);
-            $table->enum('status_pembayaran', ['pending', 'lunas', 'batal', 'kadaluarsa'])
-                  ->default('pending');
-            $table->enum('metode_pembayaran', ['Tunai', 'QRIS', 'Transfer Bank', 'E-Wallet']);
-            $table->string('payment_token')->nullable();
-            $table->string('transaction_id')->nullable();
-            $table->string('payment_url')->nullable();
+            $table->enum('status_pesanan', ['menunggu_pembayaran', 'diproses', 'selesai', 'batal'])
+                  ->default('menunggu_pembayaran');
+            $table->timestamp('tanggal_pesan')->nullable()->useCurrent();
             $table->timestamps();
         });
     }

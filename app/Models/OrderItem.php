@@ -19,16 +19,18 @@ class OrderItem extends Model
     protected function casts(): array
     {
         return [
-            'subtotal' => 'decimal:2',
             'jumlah'   => 'integer',
+            'subtotal' => 'decimal:2',
         ];
     }
 
+    // Relasi: OrderItem milik satu Order (pesanan induk)
     public function order()
     {
         return $this->belongsTo(Order::class);
     }
 
+    // Relasi: OrderItem merujuk ke satu Menu
     public function menu()
     {
         return $this->belongsTo(Menu::class);
