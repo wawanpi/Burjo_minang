@@ -1,0 +1,704 @@
+import { useState, useMemo } from 'react';
+import { Head, router, usePage } from '@inertiajs/react';
+import OwnerLayout from '@/Layouts/OwnerLayout';
+
+// ─── Types ─────────────────────────────────────────────────────────────────────
+interface Menu {
+    id: number;
+    nama_menu: string;
+    kategori: string;
+    harga: number | string;
+    stok: number;
+    gambar: string | null;
+}
+
+interface CartItem {
+    menu_id: number;
+    nama_menu: string;
+    harga: number;
+    jumlah: number;
+    subtotal: number;
+    max_stok: number;
+}
+
+interface Props {
+    menus: Menu[];
+    kategoriList: string[];
+}
+
+// ─── Component ─────────────────────────────────────────────────────────────────
+export default function PosIndex({ menus, kategoriList }: Props) {
+    const { flash, errors } = usePage().props as any;
+    const [selectedKategori, setSelectedKategori] = useState('Semua');
+    const [cart, setCart] = useState<CartItem[]>([]);
+    
+    // Payment & Order State
+    const [metodePembayaran, setMetodePembayaran] = useState('Tunai');
+    const [tipePesanan, setTipePesanan] = useState('dine_in'); // Default ke Dine In
+    const [uangDiterima, setUangDiterima] = useState<number | ''>('');
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [searchMenu, setSearchMenu] = useState('');
+
+    // Modal State
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [showClearCartModal, setShowClearCartModal] = useState(false);
+
+    // Format mata uang Rupiah
+    const formatRupiah = (val: number | string) =>
+        new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(val));
+
+    // Filter menu berdasarkan kategori dan pencarian
+    const filteredMenus = useMemo(() => {
+        let filtered = menus;
+        if (selectedKategori !== 'Semua') {
+            filtered = filtered.filter(m => m.kategori === selectedKategori);
+        }
+        if (searchMenu.trim()) {
+            const keyword = searchMenu.toLowerCase();
+            filtered = filtered.filter(m => m.nama_menu.toLowerCase().includes(keyword));
+        }
+        return filtered;
+    }, [menus, selectedKategori, searchMenu]);
+
+    // Tambah ke keranjang
+    const addToCart = (menu: Menu) => {
+        const harga = Number(menu.harga);
+        setCart(prev => {
+            const existing = prev.find(item => item.menu_id === menu.id);
+            if (existing) {
+                if (existing.jumlah >= menu.stok) return prev;
+                return prev.map(item =>
+                    item.menu_id === menu.id
+                        ? { ...item, jumlah: item.jumlah + 1, subtotal: (item.jumlah + 1) * harga }
+                        : item
+                );
+            }
+            return [...prev, {
+                menu_id: menu.id,
+                nama_menu: menu.nama_menu,
+                harga,
+                jumlah: 1,
+                subtotal: harga,
+                max_stok: menu.stok,
+            }];
+        });
+    };
+
+    // Update jumlah item di keranjang
+    const updateJumlah = (menu_id: number, delta: number) => {
+        setCart(prev => prev.map(item => {
+            if (item.menu_id === menu_id) {
+                const newJumlah = item.jumlah + delta;
+                if (newJumlah < 1) return item;
+                if (newJumlah > item.max_stok) return item;
+                return { ...item, jumlah: newJumlah, subtotal: newJumlah * item.harga };
+            }
+            return item;
+        }));
+    };
+
+    // Hapus dari keranjang
+    const removeFromCart = (menu_id: number) => {
+        setCart(prev => prev.filter(item => item.menu_id !== menu_id));
+    };
+
+    // Kosongkan keranjang — tampilkan modal konfirmasi
+    const clearCart = () => {
+        if (cart.length === 0) return;
+        setShowClearCartModal(true);
+    };
+
+    // Eksekusi kosongkan keranjang setelah konfirmasi modal
+    const confirmClearCart = () => {
+        setCart([]);
+        setUangDiterima('');
+        setTipePesanan('dine_in');
+        setShowClearCartModal(false);
+    };
+
+    // Hitung total harga
+    const totalHarga = cart.reduce((total, item) => total + item.subtotal, 0);
+    const totalItem = cart.reduce((acc, item) => acc + item.jumlah, 0);
+    const kembalian = Number(uangDiterima) - totalHarga;
+    const isUangCukup = Number(uangDiterima) >= totalHarga;
+
+    // Handle proses pembayaran — tampilkan modal konfirmasi
+    const handleCheckoutTunai = () => {
+        if (cart.length === 0) return;
+        if (metodePembayaran !== 'Tunai') {
+            alert('Integrasi Gateway (QRIS) belum diimplementasikan untuk simulasi ini.');
+            return;
+        }
+        
+        if (!isUangCukup) {
+            alert('Uang yang diterima kurang dari total tagihan!');
+            return;
+        }
+
+        // Tampilkan modal konfirmasi alih-alih window.confirm
+        setShowConfirmModal(true);
+    };
+
+    // Eksekusi pembayaran setelah konfirmasi modal
+    const confirmCheckout = () => {
+        setShowConfirmModal(false);
+        setIsProcessing(true);
+
+        const payload = {
+            cart_items: cart.map(item => ({
+                menu_id: item.menu_id,
+                jumlah: item.jumlah,
+                subtotal: item.subtotal,
+            })),
+            total_harga: totalHarga,
+            uang_diterima: Number(uangDiterima),
+            metode_pembayaran: 'Tunai',
+            tipe_pesanan: tipePesanan,
+        };
+
+        router.post('/kasir/pos', payload, {
+            onSuccess: () => {
+                setCart([]);
+                setUangDiterima('');
+                setTipePesanan('dine_in');
+                setIsProcessing(false);
+            },
+            onError: () => setIsProcessing(false),
+            preserveScroll: true,
+        });
+    };
+
+    return (
+        <OwnerLayout title="Kasir POS">
+            <Head title="Kasir POS" />
+
+            <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-8rem)]">
+                {/* ═══ Bagian Kiri: Daftar Menu ═══ */}
+                <div className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    {/* Header & Filter Kategori */}
+                    <div className="p-4 border-b border-gray-100 space-y-3">
+                        {/* Search Bar */}
+                        <div className="relative">
+                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                            <input
+                                type="text"
+                                value={searchMenu}
+                                onChange={(e) => setSearchMenu(e.target.value)}
+                                placeholder="Cari menu..."
+                                className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
+                            />
+                        </div>
+                        {/* Kategori Tabs */}
+                        <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
+                            <button
+                                onClick={() => setSelectedKategori('Semua')}
+                                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                                    selectedKategori === 'Semua'
+                                        ? 'bg-amber-500 text-white shadow-sm'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                            >
+                                Semua Menu
+                            </button>
+                            {kategoriList.map(kat => (
+                                <button
+                                    key={kat}
+                                    onClick={() => setSelectedKategori(kat)}
+                                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                                        selectedKategori === kat
+                                            ? 'bg-amber-500 text-white shadow-sm'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    {kat}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Grid Menu */}
+                    <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-gray-50/50">
+                        {filteredMenus.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                <span className="text-4xl mb-2">🍽️</span>
+                                <p className="font-medium">
+                                    {searchMenu ? `Tidak ada menu "${searchMenu}"` : 'Belum ada menu di kategori ini.'}
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {filteredMenus.map(menu => {
+                                    const cartItem = cart.find(c => c.menu_id === menu.id);
+                                    const qtyInCart = cartItem?.jumlah || 0;
+
+                                    return (
+                                        <button
+                                            key={menu.id}
+                                            onClick={() => addToCart(menu)}
+                                            disabled={menu.stok <= 0}
+                                            className={`group flex flex-col bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-amber-400 relative ${
+                                                menu.stok <= 0
+                                                    ? 'opacity-50 cursor-not-allowed border-gray-200'
+                                                    : 'border-gray-100 hover:border-amber-200'
+                                            }`}
+                                        >
+                                            <div className="w-full h-32 bg-gray-100 relative overflow-hidden">
+                                                {menu.gambar ? (
+                                                    <img
+                                                        src={`/storage/${menu.gambar}`}
+                                                        alt={menu.nama_menu}
+                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-3xl opacity-20">
+                                                        🍜
+                                                    </div>
+                                                )}
+                                                {/* Badge Stok */}
+                                                <div className={`absolute top-2 right-2 backdrop-blur-sm text-white text-xs font-semibold px-2 py-1 rounded-md ${
+                                                    menu.stok <= 0 ? 'bg-red-500/80' : menu.stok <= 5 ? 'bg-amber-500/80' : 'bg-black/60'
+                                                }`}>
+                                                    {menu.stok <= 0 ? 'Habis' : `Stok: ${menu.stok}`}
+                                                </div>
+                                                {/* Badge qty in cart */}
+                                                {qtyInCart > 0 && (
+                                                    <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-sm">
+                                                        {qtyInCart}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="p-3">
+                                                <h3 className="font-semibold text-gray-800 line-clamp-1 group-hover:text-amber-600 transition-colors text-sm">
+                                                    {menu.nama_menu}
+                                                </h3>
+                                                <p className="text-sm font-bold text-gray-900 mt-1">
+                                                    {formatRupiah(menu.harga)}
+                                                </p>
+                                            </div>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* ═══ Bagian Kanan: Keranjang ═══ */}
+                <div className="w-full lg:w-96 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden shrink-0">
+                    {/* Header Keranjang */}
+                    <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                            🛒 Keranjang
+                            {totalItem > 0 && (
+                                <span className="bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                    {totalItem}
+                                </span>
+                            )}
+                        </h2>
+                        {cart.length > 0 && (
+                            <button
+                                onClick={clearCart}
+                                className="text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
+                            >
+                                Kosongkan
+                            </button>
+                        )}
+                    </div>
+
+                    {/* Alert Errors dari Backend */}
+                    {errors?.cart && (
+                        <div className="m-4 p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg flex items-start gap-2">
+                            <svg className="w-5 h-5 text-red-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            <span>{errors.cart}</span>
+                        </div>
+                    )}
+                    {flash?.success && (
+                        <div className="m-4 p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg flex items-start gap-2 animate-toast-in">
+                            <svg className="w-5 h-5 text-green-500 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                            </svg>
+                            <span>{flash.success}</span>
+                        </div>
+                    )}
+
+                    {/* Daftar Item */}
+                    <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+                        {cart.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center h-full text-gray-400 text-sm">
+                                <span className="text-3xl mb-2 opacity-50">🛍️</span>
+                                <p className="font-medium">Keranjang masih kosong</p>
+                                <p className="text-xs mt-1">Klik menu di sebelah kiri untuk menambah pesanan</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-3">
+                                {cart.map(item => (
+                                    <div key={item.menu_id} className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
+                                        <div className="flex justify-between items-start">
+                                            <div>
+                                                <h4 className="font-medium text-gray-800 text-sm leading-tight">
+                                                    {item.nama_menu}
+                                                </h4>
+                                                <p className="text-xs text-gray-400 mt-0.5">{formatRupiah(item.harga)} / pcs</p>
+                                            </div>
+                                            <button
+                                                onClick={() => removeFromCart(item.menu_id)}
+                                                className="text-red-400 hover:text-red-600 p-1 hover:bg-red-50 rounded transition-colors"
+                                                title="Hapus item"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center justify-between mt-1">
+                                            <div className="flex items-center gap-0 bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                                                <button
+                                                    onClick={() => updateJumlah(item.menu_id, -1)}
+                                                    className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors font-medium"
+                                                    disabled={item.jumlah <= 1}
+                                                >
+                                                    −
+                                                </button>
+                                                <span className="text-sm font-semibold w-8 text-center border-x border-gray-200 py-1.5">
+                                                    {item.jumlah}
+                                                </span>
+                                                <button
+                                                    onClick={() => updateJumlah(item.menu_id, 1)}
+                                                    className="px-3 py-1.5 text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors font-medium"
+                                                    disabled={item.jumlah >= item.max_stok}
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                            <span className="font-bold text-gray-900 text-sm">
+                                                {formatRupiah(item.subtotal)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Ringkasan & UI Checkout */}
+                    <div className="p-4 bg-gray-50 border-t border-gray-200 space-y-4">
+                        {/* Summary */}
+                        <div className="space-y-2">
+                            <div className="flex justify-between items-center text-sm">
+                                <span className="text-gray-600">Total Item</span>
+                                <span className="font-semibold text-gray-900">{totalItem} item</span>
+                            </div>
+                            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+                                <span className="text-base font-bold text-gray-800">Total Tagihan</span>
+                                <span className="text-lg font-bold text-amber-600">{formatRupiah(totalHarga)}</span>
+                            </div>
+                        </div>
+
+                        {/* Tipe Pesanan (Visual Selector) */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                Tipe Layanan
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {[
+                                    { value: 'dine_in', icon: '🍽️', label: 'Dine In' },
+                                    { value: 'take_away', icon: '🛍️', label: 'Take Away' },
+                                ].map(type => (
+                                    <button
+                                        key={type.value}
+                                        type="button"
+                                        onClick={() => setTipePesanan(type.value)}
+                                        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                                            tipePesanan === type.value
+                                                ? 'border-blue-400 bg-blue-50 text-blue-700 ring-1 ring-blue-400'
+                                                : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        <span>{type.icon}</span>
+                                        {type.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Metode Pembayaran (Visual Selector) */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                                Metode Pembayaran
+                            </label>
+                            <div className="grid grid-cols-2 gap-2">
+                                {[
+                                    { value: 'Tunai', icon: '💵', label: 'Tunai' },
+                                    { value: 'QRIS', icon: '📱', label: 'QRIS' },
+                                ].map(method => (
+                                    <button
+                                        key={method.value}
+                                        type="button"
+                                        onClick={() => setMetodePembayaran(method.value)}
+                                        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                                            metodePembayaran === method.value
+                                                ? 'border-amber-400 bg-amber-50 text-amber-700 ring-1 ring-amber-400'
+                                                : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                        }`}
+                                    >
+                                        <span>{method.icon}</span>
+                                        {method.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Panel Kalkulator Tunai (Conditional rendering hanya jika Tunai) */}
+                        {metodePembayaran === 'Tunai' && (
+                            <div className="bg-white p-3 rounded-lg border border-gray-200 space-y-3 animate-fade-in shadow-sm">
+                                <div>
+                                    <label className="block text-xs font-semibold text-gray-600 mb-1 uppercase tracking-wider">
+                                        Uang Diterima (Rp)
+                                    </label>
+                                    <input 
+                                        type="number"
+                                        min={0}
+                                        value={uangDiterima}
+                                        onChange={e => setUangDiterima(e.target.value ? Number(e.target.value) : '')}
+                                        placeholder="Contoh: 50000"
+                                        className={`w-full text-right text-lg font-bold rounded-lg border focus:ring-2 focus:outline-none transition-colors ${
+                                            uangDiterima !== '' && !isUangCukup 
+                                                ? 'border-red-300 focus:border-red-400 focus:ring-red-400 bg-red-50 text-red-900' 
+                                                : 'border-gray-300 focus:border-amber-400 focus:ring-amber-400'
+                                        }`}
+                                    />
+                                    {uangDiterima !== '' && !isUangCukup && (
+                                        <p className="text-xs text-red-500 mt-1 font-medium">Uang kurang {formatRupiah(totalHarga - Number(uangDiterima))}</p>
+                                    )}
+                                </div>
+                                <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                                    <span className="text-sm font-semibold text-gray-600">Kembalian</span>
+                                    <span className={`text-lg font-bold ${kembalian > 0 ? 'text-green-600' : 'text-gray-900'}`}>
+                                        {uangDiterima === '' ? 'Rp 0' : formatRupiah(kembalian > 0 ? kembalian : 0)}
+                                    </span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Tombol Final Checkout */}
+                        <button
+                            onClick={handleCheckoutTunai}
+                            disabled={cart.length === 0 || isProcessing || (metodePembayaran === 'Tunai' && !isUangCukup)}
+                            className="w-full py-3 text-base font-semibold rounded-xl shadow-md transition-all duration-200 inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg active:scale-[0.98]"
+                        >
+                            {isProcessing ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                    </svg>
+                                    Memproses Transaksi...
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    Proses Pembayaran Tunai
+                                </>
+                            )}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* ═══ MODAL: Konfirmasi Pembayaran Tunai ═══ */}
+            {showConfirmModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-modal-overlay"
+                    onClick={() => setShowConfirmModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full mx-4 animate-modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Icon Dompet */}
+                        <div className="flex justify-center mb-4">
+                            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center ring-4 ring-amber-50">
+                                <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 013 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 013 6v3" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Judul */}
+                        <h3 className="text-xl font-bold text-gray-900 text-center">
+                            Konfirmasi Pembayaran
+                        </h3>
+
+                        {/* Deskripsi Dinamis */}
+                        <p className="text-gray-600 text-center mt-2 text-sm leading-relaxed">
+                            Proses pembayaran <span className="font-semibold text-gray-800">Tunai</span> sebesar{' '}
+                            <span className="font-bold text-amber-600">{formatRupiah(totalHarga)}</span>{' '}
+                            dengan uang diterima{' '}
+                            <span className="font-bold text-green-600">{formatRupiah(Number(uangDiterima))}</span>?
+                        </p>
+
+                        {/* Rincian Pesanan (Order Read-back) */}
+                        <div className="mt-4">
+                            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                                </svg>
+                                Rincian Pesanan
+                            </h4>
+                            <div className="max-h-40 overflow-y-auto pr-2 space-y-1.5 custom-scrollbar">
+                                {cart.map(item => (
+                                    <div key={item.menu_id} className="flex items-center justify-between text-sm py-1.5 px-2 rounded-md bg-gray-50 hover:bg-gray-100 transition-colors">
+                                        <span className="text-gray-700">
+                                            <span className="font-bold text-gray-900">{item.jumlah}x</span>{' '}
+                                            {item.nama_menu}
+                                        </span>
+                                        <span className="font-semibold text-gray-800 whitespace-nowrap ml-3">
+                                            {formatRupiah(item.subtotal)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Detail Ringkasan */}
+                        <div className="mt-4 bg-gray-50 rounded-lg p-3 space-y-2 border border-gray-100">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Total Item</span>
+                                <span className="font-medium text-gray-800">{totalItem} item</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-gray-500">Tipe Layanan</span>
+                                <span className="font-medium text-gray-800">
+                                    {tipePesanan === 'dine_in' ? '🍽️ Dine In' : '🛍️ Take Away'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between text-sm pt-2 border-t border-gray-200">
+                                <span className="text-gray-500">Kembalian</span>
+                                <span className="font-bold text-green-600">
+                                    {formatRupiah(Number(uangDiterima) - totalHarga > 0 ? Number(uangDiterima) - totalHarga : 0)}
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Tombol Aksi */}
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                onClick={() => setShowConfirmModal(false)}
+                                className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-all duration-200 active:scale-[0.98]"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={confirmCheckout}
+                                className="flex-1 px-4 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.98] inline-flex items-center justify-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Ya, Proses Sekarang
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══ MODAL: Konfirmasi Kosongkan Keranjang ═══ */}
+            {showClearCartModal && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-modal-overlay"
+                    onClick={() => setShowClearCartModal(false)}
+                >
+                    <div
+                        className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full mx-4 animate-modal-content"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Icon Peringatan */}
+                        <div className="flex justify-center mb-4">
+                            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center ring-4 ring-red-50">
+                                <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        {/* Judul */}
+                        <h3 className="text-lg font-bold text-gray-900 text-center">
+                            Kosongkan Keranjang?
+                        </h3>
+
+                        {/* Deskripsi */}
+                        <p className="text-gray-500 text-center mt-2 text-sm">
+                            Semua <span className="font-semibold text-gray-700">{totalItem} item</span> di keranjang akan dihapus. Tindakan ini tidak bisa dibatalkan.
+                        </p>
+
+                        {/* Tombol Aksi */}
+                        <div className="flex gap-3 mt-6">
+                            <button
+                                onClick={() => setShowClearCartModal(false)}
+                                className="flex-1 px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 font-medium text-sm hover:bg-gray-50 transition-all duration-200 active:scale-[0.98]"
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={confirmClearCart}
+                                className="flex-1 px-4 py-2.5 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.98] inline-flex items-center justify-center gap-2"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Ya, Kosongkan
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CSS Tambahan untuk Scrollbar & Animations */}
+            <style dangerouslySetInnerHTML={{__html: `
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                    height: 6px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background-color: #cbd5e1;
+                    border-radius: 20px;
+                }
+                .custom-scrollbar:hover::-webkit-scrollbar-thumb {
+                    background-color: #94a3b8;
+                }
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-4px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fade-in { animation: fadeIn 0.2s ease-out; }
+                
+                @keyframes toastIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+                .animate-toast-in { animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+                @keyframes modalOverlay {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                .animate-modal-overlay { animation: modalOverlay 0.2s ease-out; }
+
+                @keyframes modalContent {
+                    from { opacity: 0; transform: scale(0.9) translateY(10px); }
+                    to { opacity: 1; transform: scale(1) translateY(0); }
+                }
+                .animate-modal-content { animation: modalContent 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+            `}} />
+        </OwnerLayout>
+    );
+}
