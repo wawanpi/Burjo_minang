@@ -14,6 +14,8 @@ class Order extends Model
         'total_harga',
         'status_pesanan',
         'tanggal_pesan',
+        'tipe_pesanan',
+        'waktu_pengambilan',
     ];
 
     protected function casts(): array

@@ -60,6 +60,20 @@ Route::middleware(['auth', 'role:owner,kasir'])
         Route::post('/pos', [PosController::class, 'storeOrderTunai'])->name('pos.store');
     });
 
+use App\Http\Controllers\CustomerOrderController;
+
+// ─── Route Pelanggan (Customer) ──────────────────────────
+Route::middleware(['auth', 'role:pelanggan'])
+    ->prefix('customer')
+    ->name('customer.')
+    ->group(function () {
+        Route::get('/menu', [CustomerOrderController::class, 'index'])->name('menu');
+        Route::post('/menu/checkout', [CustomerOrderController::class, 'store'])->name('checkout');
+        
+        Route::get('/orders', [CustomerOrderController::class, 'orders'])->name('orders');
+        Route::post('/orders/{order}/review', [CustomerOrderController::class, 'storeReview'])->name('reviews.store');
+    });
+
 // ─── Routing Cerdas untuk Root (/) ──────────────────────────
 Route::get('/', function () {
     if (!auth()->check()) {
@@ -74,6 +88,10 @@ Route::get('/', function () {
 
     if ($role === 'kasir') {
         return redirect()->route('kasir.pos.index');
+    }
+
+    if ($role === 'pelanggan') {
+        return redirect()->route('customer.menu');
     }
 
     return response("Selamat datang, {$role}. Halaman dashboard Anda belum dibuat.");

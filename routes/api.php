@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PaymentCallbackController;
 
-// This API route file is kept to prevent Laravel bootstrap routing error,
-// but all endpoints are currently handled by Inertia.js web routes.
+// Webhook untuk Midtrans (Otomatis bebas CSRF Token karena berada di api.php)
+Route::post('/payment-callback', [PaymentCallbackController::class, 'callback']);
