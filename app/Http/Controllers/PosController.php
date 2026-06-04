@@ -8,6 +8,7 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
@@ -94,5 +95,166 @@ class PosController extends Controller
         return redirect()
             ->route('kasir.pos.index') // Asumsi route name untuk POS
             ->with('success', "Transaksi Tunai #$order->id Berhasil! Uang Kembalian: Rp " . number_format($validated['uang_diterima'] - $validated['total_harga'], 0, ',', '.'));
+    }
+
+    /**
+     * Proses checkout QRIS / Virtual Account Midtrans dari Kasir (POS Digital)
+     * Mengembalikan JSON { snap_token, order_id } ke frontend React.
+     */
+    public function storeOrderDigital(Request $request)
+    {
+        $validated = $request->validate([
+            'cart_items'            => ['required', 'array', 'min:1'],
+            'cart_items.*.menu_id'  => ['required', 'exists:menus,id'],
+            'cart_items.*.jumlah'   => ['required', 'integer', 'min:1'],
+            'cart_items.*.subtotal' => ['required', 'numeric', 'min:0'],
+            'total_harga'           => ['required', 'numeric', 'min:1'],
+            // Terima nilai label dari frontend ('QRIS' atau 'Virtual Account')
+            'metode_pembayaran'     => ['required', 'in:QRIS,Virtual Account'],
+            'tipe_pesanan'          => ['required', 'in:dine_in,take_away'],
+        ]);
+
+        // ── MAPPING: Konversi label frontend → nilai ENUM database ────────────
+        //
+        //  ENUM di tabel payments: ['Tunai', 'QRIS', 'Transfer Bank', 'E-Wallet']
+        //
+        //  Frontend mengirim "Virtual Account" (label UI yang ramah pengguna),
+        //  tapi database hanya mengenal "Transfer Bank".
+        //  Mapping ini adalah satu-satunya tempat konversi agar konsisten.
+        $metodePembayaranDb = match ($validated['metode_pembayaran']) {
+            'Virtual Account' => 'Transfer Bank',
+            'QRIS'            => 'QRIS',
+            default           => $validated['metode_pembayaran'],
+        };
+
+        // ── Fase 1: Simpan pesanan ke database dalam satu transaksi ──────────
+        $order = DB::transaction(function () use ($validated, $request, $metodePembayaranDb) {
+            // Validasi stok sebelum menyimpan order
+            foreach ($validated['cart_items'] as $item) {
+                $menu = Menu::lockForUpdate()->find($item['menu_id']);
+                if (!$menu || $menu->stok < $item['jumlah']) {
+                    throw ValidationException::withMessages([
+                        'cart' => "Stok untuk menu '{$menu->nama_menu}' tidak mencukupi (Tersisa: {$menu->stok})."
+                    ]);
+                }
+            }
+
+            // Buat record Order dengan status menunggu_pembayaran
+            $order = Order::create([
+                'user_id'        => $request->user()->id,
+                'total_harga'    => $validated['total_harga'],
+                'status_pesanan' => 'menunggu_pembayaran',
+                'tipe_pesanan'   => $validated['tipe_pesanan'],
+                'tanggal_pesan'  => now(),
+            ]);
+
+            // Buat Order Items & Kurangi stok
+            foreach ($validated['cart_items'] as $item) {
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'menu_id'  => $item['menu_id'],
+                    'jumlah'   => $item['jumlah'],
+                    'subtotal' => $item['subtotal'],
+                ]);
+                Menu::where('id', $item['menu_id'])->decrement('stok', $item['jumlah']);
+            }
+
+            // Buat record Payment — gunakan $metodePembayaranDb (sudah di-mapping)
+            Payment::create([
+                'order_id'          => $order->id,
+                'metode_pembayaran' => $metodePembayaranDb, // ✅ 'Transfer Bank' atau 'QRIS'
+                'status_pembayaran' => 'pending',
+                'payment_token'     => null,
+                'transaction_id'    => null,
+                'payment_url'       => null,
+            ]);
+
+            return $order;
+        });
+
+        // ── Fase 2: Generate Midtrans Snap Token ────────────────────────────
+        \Midtrans\Config::$serverKey    = env('MIDTRANS_SERVER_KEY');
+        \Midtrans\Config::$isProduction = env('MIDTRANS_IS_PRODUCTION', false);
+        \Midtrans\Config::$isSanitized  = true;
+        \Midtrans\Config::$is3ds        = true;
+
+        // Susun item_details untuk Midtrans
+        $itemDetails = [];
+        foreach ($validated['cart_items'] as $item) {
+            $menu = Menu::find($item['menu_id']);
+            $itemDetails[] = [
+                'id'       => (string) $item['menu_id'],
+                'price'    => (int) ($item['subtotal'] / $item['jumlah']),
+                'quantity' => (int) $item['jumlah'],
+                'name'     => $menu ? substr($menu->nama_menu, 0, 50) : 'Menu #' . $item['menu_id'],
+            ];
+        }
+
+        // Tentukan enabled_payments berdasarkan pilihan kasir
+        $enabledPayments = $validated['metode_pembayaran'] === 'QRIS'
+            ? ['gopay', 'shopeepay', 'other_qris']
+            : ['bank_transfer', 'echannel', 'permata_va', 'bca_va', 'bni_va', 'bri_va'];
+
+        // KASIR- prefix agar Webhook bisa membedakan order online vs offline
+        $midtransOrderId = 'KASIR-' . $order->id . '-' . time();
+
+        $params = [
+            'transaction_details' => [
+                'order_id'     => $midtransOrderId,
+                'gross_amount' => (int) $validated['total_harga'],
+            ],
+            'customer_details' => [
+                'first_name' => 'Pelanggan Kasir',
+                'email'      => 'kasir@burjominang.id',
+            ],
+            'item_details'     => $itemDetails,
+            'enabled_payments' => $enabledPayments,
+            // Batas waktu pembayaran 3 menit untuk transaksi kasir (fast food)
+            'custom_expiry'    => [
+                'expiry_duration' => 3,
+                'unit'            => 'minute',
+            ],
+        ];
+
+        try {
+            $snapTransaction = \Midtrans\Snap::createTransaction($params);
+            $snapToken  = $snapTransaction->token;
+            $paymentUrl = $snapTransaction->redirect_url;
+
+            // Simpan token & transaction_id ke tabel payments
+            $order->payment->update([
+                'payment_token'  => $snapToken,
+                'transaction_id' => $midtransOrderId,
+                'payment_url'    => $paymentUrl,
+            ]);
+
+            // Kembalikan token ke frontend kasir sebagai JSON
+            return response()->json([
+                'snap_token' => $snapToken,
+                'order_id'   => $order->id,
+                'message'    => 'Snap token berhasil dibuat.',
+            ]);
+
+        } catch (\Exception $midtransError) {
+            // Rollback order yang sudah dibuat karena Midtrans gagal
+            DB::transaction(function () use ($order) {
+                // Kembalikan stok
+                foreach ($order->orderItems as $item) {
+                    Menu::where('id', $item->menu_id)->increment('stok', $item->jumlah);
+                }
+                $order->payment()->delete();
+                $order->orderItems()->delete();
+                $order->delete();
+            });
+
+            Log::error('Midtrans POS Snap Creation Failed', [
+                'error'    => $midtransError->getMessage(),
+                'kasir_id' => $request->user()->id,
+            ]);
+
+            return response()->json([
+                'message' => 'Gagal menghubungi Payment Gateway: ' . $midtransError->getMessage(),
+            ], 500);
+        }
     }
 }

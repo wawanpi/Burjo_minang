@@ -1,6 +1,20 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Head, router, usePage } from '@inertiajs/react';
 import OwnerLayout from '@/Layouts/OwnerLayout';
+
+// ─── Deklarasi window.snap untuk TypeScript ────────────────────────────────
+declare global {
+    interface Window {
+        snap?: {
+            pay: (token: string, options: {
+                onSuccess?:  (result: any) => void;
+                onPending?:  (result: any) => void;
+                onError?:    (result: any) => void;
+                onClose?:    ()           => void;
+            }) => void;
+        };
+    }
+}
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 interface Menu {
@@ -34,14 +48,36 @@ export default function PosIndex({ menus, kategoriList }: Props) {
     
     // Payment & Order State
     const [metodePembayaran, setMetodePembayaran] = useState('Tunai');
-    const [tipePesanan, setTipePesanan] = useState('dine_in'); // Default ke Dine In
+    const [tipePesanan, setTipePesanan] = useState('dine_in');
     const [uangDiterima, setUangDiterima] = useState<number | ''>('');
     const [isProcessing, setIsProcessing] = useState(false);
     const [searchMenu, setSearchMenu] = useState('');
 
     // Modal State
-    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [showConfirmModal, setShowConfirmModal]     = useState(false);
     const [showClearCartModal, setShowClearCartModal] = useState(false);
+
+    // State khusus untuk alur Digital Payment (QRIS / VA)
+    type DigitalStatus = 'idle' | 'loading' | 'success' | 'pending' | 'error';
+    const [digitalStatus, setDigitalStatus]   = useState<DigitalStatus>('idle');
+    const [digitalMessage, setDigitalMessage] = useState('');
+    const [completedOrderId, setCompletedOrderId] = useState<number | null>(null);
+
+    // ── Inject Midtrans Snap.js sekali saat komponen mount ───────────────────
+    useEffect(() => {
+        const snapUrl = import.meta.env.VITE_MIDTRANS_IS_PRODUCTION === 'true'
+            ? 'https://app.midtrans.com/snap/snap.js'
+            : 'https://app.sandbox.midtrans.com/snap/snap.js';
+        const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY as string;
+
+        if (document.getElementById('midtrans-snap-script')) return; // sudah ada
+
+        const script = document.createElement('script');
+        script.id  = 'midtrans-snap-script';
+        script.src = snapUrl;
+        script.setAttribute('data-client-key', clientKey);
+        document.head.appendChild(script);
+    }, []);
 
     // Format mata uang Rupiah
     const formatRupiah = (val: number | string) =>
@@ -122,21 +158,126 @@ export default function PosIndex({ menus, kategoriList }: Props) {
     const kembalian = Number(uangDiterima) - totalHarga;
     const isUangCukup = Number(uangDiterima) >= totalHarga;
 
-    // Handle proses pembayaran — tampilkan modal konfirmasi
-    const handleCheckoutTunai = () => {
+    // ── Handler utama — cabangkan ke Tunai atau Digital ─────────────────────
+    const handleCheckout = () => {
         if (cart.length === 0) return;
-        if (metodePembayaran !== 'Tunai') {
-            alert('Integrasi Gateway (QRIS) belum diimplementasikan untuk simulasi ini.');
-            return;
-        }
-        
-        if (!isUangCukup) {
-            alert('Uang yang diterima kurang dari total tagihan!');
-            return;
-        }
 
-        // Tampilkan modal konfirmasi alih-alih window.confirm
-        setShowConfirmModal(true);
+        if (metodePembayaran === 'Tunai') {
+            if (!isUangCukup) {
+                alert('Uang yang diterima kurang dari total tagihan!');
+                return;
+            }
+            setShowConfirmModal(true);
+        } else {
+            // QRIS atau Virtual Account → alur Midtrans Snap
+            handleCheckoutDigital();
+        }
+    };
+
+    // ── Alur Digital: Fetch snap_token → buka popup Midtrans ─────────────────
+    const handleCheckoutDigital = async () => {
+        setIsProcessing(true);
+        setDigitalStatus('loading');
+        setDigitalMessage('');
+
+        const payload = {
+            cart_items: cart.map(item => ({
+                menu_id: item.menu_id,
+                jumlah:  item.jumlah,
+                subtotal: item.subtotal,
+            })),
+            total_harga:       totalHarga,
+            metode_pembayaran: metodePembayaran, // 'QRIS' atau 'Virtual Account'
+            tipe_pesanan:      tipePesanan,
+        };
+
+        try {
+            // Ambil CSRF token dari meta tag (wajib untuk POST Laravel)
+            const csrfMeta = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]');
+            const csrfToken = csrfMeta?.content ?? '';
+
+            const response = await fetch(route('kasir.pos.digital'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept':       'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                // Validasi atau error dari Laravel
+                const errMsg = data?.errors?.cart ?? data?.message ?? 'Terjadi kesalahan pada server.';
+                setDigitalStatus('error');
+                setDigitalMessage(errMsg);
+                setIsProcessing(false);
+                return;
+            }
+
+            const snapToken = data.snap_token as string;
+            const orderId   = data.order_id   as number;
+
+            // Pastikan Snap.js sudah dimuat
+            if (!window.snap) {
+                setDigitalStatus('error');
+                setDigitalMessage('Midtrans Snap.js belum termuat. Pastikan koneksi internet stabil dan coba lagi.');
+                setIsProcessing(false);
+                return;
+            }
+
+            setIsProcessing(false);
+
+            // Buka popup Midtrans — pelanggan yang ada di depan kasir bisa
+            // langsung scan QRIS atau catat nomor VA di layar kasir/tablet.
+            window.snap.pay(snapToken, {
+                onSuccess: (result) => {
+                    console.log('[Midtrans] Sukses:', result);
+                    setCompletedOrderId(orderId);
+                    setDigitalStatus('success');
+                    setDigitalMessage(`Pembayaran #${orderId} berhasil dikonfirmasi! Pesanan langsung masuk ke dapur.`);
+                    // Reset keranjang
+                    setCart([]);
+                    setUangDiterima('');
+                    setTipePesanan('dine_in');
+                },
+                onPending: (result) => {
+                    console.log('[Midtrans] Pending:', result);
+                    setCompletedOrderId(orderId);
+                    setDigitalStatus('pending');
+                    setDigitalMessage(`Pembayaran #${orderId} menunggu konfirmasi dari pelanggan. Pesanan sudah tercatat.`);
+                    setCart([]);
+                    setUangDiterima('');
+                },
+                onError: (result) => {
+                    console.error('[Midtrans] Error:', result);
+                    setDigitalStatus('error');
+                    setDigitalMessage('Pembayaran gagal atau dibatalkan. Silakan coba lagi atau pilih metode lain.');
+                },
+                onClose: () => {
+                    // Pelanggan menutup popup tanpa bayar
+                    if (digitalStatus === 'idle' || digitalStatus === 'loading') {
+                        setDigitalStatus('error');
+                        setDigitalMessage('Popup pembayaran ditutup sebelum transaksi selesai.');
+                    }
+                },
+            });
+
+        } catch (networkError) {
+            console.error('[POS Digital] Network error:', networkError);
+            setDigitalStatus('error');
+            setDigitalMessage('Gagal terhubung ke server. Periksa koneksi internet Anda.');
+            setIsProcessing(false);
+        }
+    };
+
+    // Reset status modal digital
+    const resetDigitalStatus = () => {
+        setDigitalStatus('idle');
+        setDigitalMessage('');
+        setCompletedOrderId(null);
     };
 
     // Eksekusi pembayaran setelah konfirmasi modal
@@ -425,31 +566,39 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                             </div>
                         </div>
 
-                        {/* Metode Pembayaran (Visual Selector) */}
+                        {/* Metode Pembayaran (Visual Selector — 3 Opsi) */}
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1.5">
                                 Metode Pembayaran
                             </label>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-3 gap-2">
                                 {[
-                                    { value: 'Tunai', icon: '💵', label: 'Tunai' },
-                                    { value: 'QRIS', icon: '📱', label: 'QRIS' },
+                                    { value: 'Tunai',           icon: '💵', label: 'Tunai'    },
+                                    { value: 'QRIS',            icon: '📱', label: 'QRIS'     },
+                                    { value: 'Virtual Account', icon: '🏦', label: 'VA Bank'  },
                                 ].map(method => (
                                     <button
                                         key={method.value}
                                         type="button"
-                                        onClick={() => setMetodePembayaran(method.value)}
-                                        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                                        onClick={() => { setMetodePembayaran(method.value); resetDigitalStatus(); }}
+                                        className={`flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 border ${
                                             metodePembayaran === method.value
-                                                ? 'border-amber-400 bg-amber-50 text-amber-700 ring-1 ring-amber-400'
+                                                ? 'border-amber-400 bg-amber-50 text-amber-700 ring-1 ring-amber-400 shadow-sm'
                                                 : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
                                         }`}
                                     >
-                                        <span>{method.icon}</span>
+                                        <span className="text-lg">{method.icon}</span>
                                         {method.label}
                                     </button>
                                 ))}
                             </div>
+                            {/* Info hint untuk metode digital */}
+                            {(metodePembayaran === 'QRIS' || metodePembayaran === 'Virtual Account') && (
+                                <p className="mt-2 text-xs text-blue-600 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2 leading-relaxed">
+                                    💡 Popup Midtrans akan muncul di layar ini. Arahkan pelanggan untuk
+                                    {metodePembayaran === 'QRIS' ? ' scan QR Code.' : ' catat nomor Virtual Account.'}
+                                </p>
+                            )}
                         </div>
 
                         {/* Panel Kalkulator Tunai (Conditional rendering hanya jika Tunai) */}
@@ -486,9 +635,16 @@ export default function PosIndex({ menus, kategoriList }: Props) {
 
                         {/* Tombol Final Checkout */}
                         <button
-                            onClick={handleCheckoutTunai}
-                            disabled={cart.length === 0 || isProcessing || (metodePembayaran === 'Tunai' && !isUangCukup)}
-                            className="w-full py-3 text-base font-semibold rounded-xl shadow-md transition-all duration-200 inline-flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg active:scale-[0.98]"
+                            onClick={handleCheckout}
+                            disabled={
+                                cart.length === 0 ||
+                                isProcessing ||
+                                (metodePembayaran === 'Tunai' && !isUangCukup) ||
+                                digitalStatus === 'loading'
+                            }
+                            className={`w-full py-3 text-base font-semibold rounded-xl shadow-md transition-all duration-200 inline-flex items-center justify-center gap-2 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg active:scale-[0.98] ${
+                                metodePembayaran === 'Tunai' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'
+                            }`}
                         >
                             {isProcessing ? (
                                 <>
@@ -496,14 +652,21 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                                     </svg>
-                                    Memproses Transaksi...
+                                    Menghubungi Midtrans...
                                 </>
-                            ) : (
+                            ) : metodePembayaran === 'Tunai' ? (
                                 <>
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                                     </svg>
                                     Proses Pembayaran Tunai
+                                </>
+                            ) : (
+                                <>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8H2a1 1 0 00-1 1v5a1 1 0 001 1h3m10-11h3a1 1 0 011 1v5a1 1 0 01-1 1h-3m-6.5 0H8.5" />
+                                    </svg>
+                                    Buka Pembayaran {metodePembayaran}
                                 </>
                             )}
                         </button>
@@ -655,6 +818,112 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                 Ya, Kosongkan
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══ MODAL: Status Pembayaran Digital (QRIS / VA) ═══ */}
+            {(digitalStatus === 'loading' || digitalStatus === 'success' || digitalStatus === 'pending' || digitalStatus === 'error') && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-modal-overlay">
+                    <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full mx-4 text-center animate-modal-content">
+
+                        {/* ── Loading State ── */}
+                        {digitalStatus === 'loading' && (
+                            <>
+                                <div className="flex justify-center mb-5">
+                                    <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center ring-4 ring-blue-50">
+                                        <svg className="animate-spin w-8 h-8 text-blue-600" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-900">Menghubungi Midtrans...</h3>
+                                <p className="text-sm text-gray-500 mt-2">Menyiapkan session pembayaran. Mohon tunggu sebentar.</p>
+                            </>
+                        )}
+
+                        {/* ── Success State ── */}
+                        {digitalStatus === 'success' && (
+                            <>
+                                <div className="flex justify-center mb-5">
+                                    <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center ring-4 ring-green-50">
+                                        <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <h3 className="text-lg font-bold text-green-700">Pembayaran Berhasil! 🎉</h3>
+                                <p className="text-sm text-gray-600 mt-2 leading-relaxed">{digitalMessage}</p>
+                                {completedOrderId && (
+                                    <div className="mt-4 bg-green-50 border border-green-200 rounded-xl py-2 px-4 inline-block">
+                                        <span className="text-sm font-mono font-bold text-green-700">Order #{completedOrderId}</span>
+                                    </div>
+                                )}
+                                <button
+                                    onClick={resetDigitalStatus}
+                                    className="mt-6 w-full py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors shadow-sm"
+                                >
+                                    ✓ Transaksi Berikutnya
+                                </button>
+                            </>
+                        )}
+
+                        {/* ── Pending State ── */}
+                        {digitalStatus === 'pending' && (
+                            <>
+                                <div className="flex justify-center mb-5">
+                                    <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center ring-4 ring-amber-50">
+                                        <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <h3 className="text-lg font-bold text-amber-700">Menunggu Pembayaran ⏳</h3>
+                                <p className="text-sm text-gray-600 mt-2 leading-relaxed">{digitalMessage}</p>
+                                {completedOrderId && (
+                                    <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl py-2 px-4 inline-block">
+                                        <span className="text-sm font-mono font-bold text-amber-700">Order #{completedOrderId} — Sudah Tercatat</span>
+                                    </div>
+                                )}
+                                <p className="text-xs text-gray-400 mt-3">Webhook Midtrans akan mengupdate status otomatis saat pelanggan melunasi pembayaran.</p>
+                                <button
+                                    onClick={resetDigitalStatus}
+                                    className="mt-5 w-full py-3 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-xl transition-colors shadow-sm"
+                                >
+                                    OK, Transaksi Berikutnya
+                                </button>
+                            </>
+                        )}
+
+                        {/* ── Error State ── */}
+                        {digitalStatus === 'error' && (
+                            <>
+                                <div className="flex justify-center mb-5">
+                                    <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center ring-4 ring-red-50">
+                                        <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <h3 className="text-lg font-bold text-red-700">Pembayaran Gagal</h3>
+                                <p className="text-sm text-gray-600 mt-2 leading-relaxed">{digitalMessage || 'Terjadi kesalahan. Silakan coba lagi.'}</p>
+                                <div className="flex gap-3 mt-6">
+                                    <button
+                                        onClick={resetDigitalStatus}
+                                        className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-xl text-sm hover:bg-gray-50 transition-colors"
+                                    >
+                                        Tutup
+                                    </button>
+                                    <button
+                                        onClick={() => { resetDigitalStatus(); handleCheckoutDigital(); }}
+                                        className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-sm transition-colors shadow-sm"
+                                    >
+                                        Coba Lagi
+                                    </button>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

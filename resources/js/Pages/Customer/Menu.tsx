@@ -35,6 +35,7 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
   const [tipeLayanan, setTipeLayanan] = useState<'dine_in' | 'take_away'>('take_away');
   const [waktuKedatangan, setWaktuKedatangan] = useState('');
   const [metodePembayaran, setMetodePembayaran] = useState<'Transfer Bank' | 'QRIS'>('QRIS');
+  const [jumlahOrang, setJumlahOrang] = useState<number>(1); // default 1 orang
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [timeError, setTimeError] = useState<string | null>(null);
 
@@ -153,6 +154,8 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
       tipe_pesanan: tipeLayanan,
       waktu_pengambilan: waktuKedatangan || null,
       metode_pembayaran: metodePembayaran,
+      // Kirim jumlah_orang hanya jika Dine In, null jika Take Away
+      jumlah_orang: tipeLayanan === 'dine_in' ? jumlahOrang : null,
     };
 
     router.post(route('customer.checkout'), payload, {
@@ -346,6 +349,61 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                       </label>
                     </div>
                   </div>
+
+                  {/* Input 1b: Jumlah Orang — HANYA tampil saat Dine In */}
+                  {tipeLayanan === 'dine_in' && (
+                    <div className="animate-fade-in">
+                      <label
+                        htmlFor="jumlah-orang"
+                        className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+                      >
+                        Jumlah Orang <span className="text-red-500">*</span>
+                      </label>
+                      <div className="flex items-center gap-3">
+                        {/* Tombol kurang */}
+                        <button
+                          type="button"
+                          onClick={() => setJumlahOrang(prev => Math.max(1, prev - 1))}
+                          disabled={jumlahOrang <= 1}
+                          className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold text-lg hover:bg-amber-100 hover:text-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          aria-label="Kurangi jumlah orang"
+                        >
+                          −
+                        </button>
+
+                        {/* Input angka langsung */}
+                        <input
+                          id="jumlah-orang"
+                          type="number"
+                          min={1}
+                          max={50}
+                          value={jumlahOrang}
+                          onChange={e => {
+                            const val = parseInt(e.target.value, 10);
+                            if (!isNaN(val) && val >= 1 && val <= 50) setJumlahOrang(val);
+                          }}
+                          className="w-20 text-center text-xl font-bold px-3 py-2 rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          aria-label="Jumlah orang"
+                        />
+
+                        {/* Tombol tambah */}
+                        <button
+                          type="button"
+                          onClick={() => setJumlahOrang(prev => Math.min(50, prev + 1))}
+                          disabled={jumlahOrang >= 50}
+                          className="w-10 h-10 flex items-center justify-center rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold text-lg hover:bg-amber-100 hover:text-amber-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                          aria-label="Tambah jumlah orang"
+                        >
+                          +
+                        </button>
+
+                        <span className="text-sm text-gray-500 dark:text-gray-400">orang</span>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                        Maksimal 50 orang. Hubungi kami untuk reservasi lebih besar.
+                      </p>
+                    </div>
+                  )}
 
                   {/* Input 2: Jam Kedatangan */}
                   <div>

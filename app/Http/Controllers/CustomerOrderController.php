@@ -48,8 +48,15 @@ class CustomerOrderController extends Controller
             'items.*.jumlah'        => ['required', 'integer', 'min:1'],
             'items.*.harga'         => ['required', 'numeric', 'min:0'],
             'tipe_pesanan'          => ['required', 'in:dine_in,take_away'],
-            'waktu_pengambilan'     => ['nullable', 'string'], // type time format H:i
+            'waktu_pengambilan'     => ['nullable', 'string'],
             'metode_pembayaran'     => ['required', 'in:Transfer Bank,QRIS'],
+            // jumlah_orang: wajib diisi saat Dine In, diabaikan saat Take Away
+            'jumlah_orang'          => [
+                $request->input('tipe_pesanan') === 'dine_in' ? 'required' : 'nullable',
+                'integer',
+                'min:1',
+                'max:50',
+            ],
         ]);
 
         // Hitung total
@@ -90,6 +97,10 @@ class CustomerOrderController extends Controller
                 'tanggal_pesan'     => now(),
                 'tipe_pesanan'      => $validated['tipe_pesanan'],
                 'waktu_pengambilan' => $waktuPengambilan,
+                // Hanya simpan jumlah_orang untuk Dine In, null untuk Take Away
+                'jumlah_orang'      => $validated['tipe_pesanan'] === 'dine_in'
+                    ? (int) $validated['jumlah_orang']
+                    : null,
             ]);
 
             // Buat Order Items & kurangi stok menu
@@ -153,11 +164,11 @@ class CustomerOrderController extends Controller
                 'item_details' => $itemDetails,
                 // Batasi UI Midtrans sesuai pilihan pembayaran
                 'enabled_payments' => $enabledPayments,
-                // Custom Expiry 5 Menit
+                // Custom Expiry 3 Menit (fast food)
                 'custom_expiry' => [
                     'start_time' => now()->format('Y-m-d H:i:s O'),
                     'unit'       => 'minute',
-                    'duration'   => 5,
+                    'duration'   => 3,
                 ],
             ];
 

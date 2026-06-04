@@ -20,6 +20,7 @@ class OrderResource extends JsonResource
             'waktu_pengambilan' => $this->waktu_pengambilan,
             'sisa_menit'        => $this->tipe_pesanan === 'online' && $this->waktu_pengambilan ? (int) round(now()->diffInMinutes(Carbon::parse($this->waktu_pengambilan), false)) : null,
             'durasi_menit'      => $this->tipe_pesanan !== 'online' ? (int) abs(now()->diffInMinutes(Carbon::parse($this->created_at))) : null,
+            'jumlah_orang'      => $this->jumlah_orang,
             'status_pembayaran' => $this->payment?->status_pembayaran,
             'metode_pembayaran' => $this->payment?->metode_pembayaran,
             'payment'           => $this->whenLoaded('payment'),

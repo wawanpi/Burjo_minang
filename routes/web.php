@@ -58,6 +58,7 @@ Route::middleware(['auth', 'role:owner,kasir'])
         // Point of Sale / Kasir Offline
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('/pos', [PosController::class, 'storeOrderTunai'])->name('pos.store');
+        Route::post('/pos/digital', [PosController::class, 'storeOrderDigital'])->name('pos.digital');
     });
 
 use App\Http\Controllers\CustomerOrderController;

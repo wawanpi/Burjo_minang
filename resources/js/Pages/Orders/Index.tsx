@@ -62,6 +62,7 @@ interface Order {
     waktu_pengambilan: string | null;
     sisa_menit: number | null;
     durasi_menit: number | null;
+    jumlah_orang: number | null;
 }
 
 interface PaginationLink {
@@ -351,7 +352,9 @@ export default function OrderIndex({ orders, filters }: Props) {
                                                 <span className={`inline-flex mt-1 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
                                                     order.tipe_pesanan === 'online' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
                                                 }`}>
-                                                    {order.tipe_pesanan.replace('_', ' ')}
+                                                    {order.tipe_pesanan === 'dine_in'
+                                                        ? `DINE IN (${order.jumlah_orang || 1} ORANG)`
+                                                        : order.tipe_pesanan.replace('_', ' ')}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4">
