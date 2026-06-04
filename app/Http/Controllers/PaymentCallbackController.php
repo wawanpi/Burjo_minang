@@ -113,6 +113,16 @@ class PaymentCallbackController extends Controller
         $orderStatus   = $order->status_pesanan;
         $paymentStatus = $payment ? $payment->status_pembayaran : 'pending';
 
+        // --- SECURITY FIX: STATE MACHINE PENCEGAHAN LINTAS STATUS ---
+        // Cegah webhook (yang mungkin telat datang) membangkitkan pesanan yang sudah final
+        if (in_array($orderStatus, ['batal', 'selesai'])) {
+            Log::info('Midtrans Webhook: Diabaikan karena pesanan sudah final (batal/selesai)', [
+                'order_id'       => $order->id,
+                'status_pesanan' => $orderStatus
+            ]);
+            return response()->json(['message' => 'Order is already in final state']);
+        }
+
         // ── 4. Peta Status: transaction_status Midtrans → status internal ─────
         //
         //  Referensi: https://docs.midtrans.com/reference/transaction-status

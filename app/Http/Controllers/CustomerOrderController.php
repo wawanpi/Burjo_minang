@@ -59,37 +59,48 @@ class CustomerOrderController extends Controller
             ],
         ]);
 
-        // Hitung total
-        $totalHarga = 0;
-        foreach ($validated['items'] as $item) {
-            $totalHarga += $item['harga'] * $item['jumlah'];
-        }
-
+        // (Harga dan Subtotal tidak dihitung di sini lagi untuk mencegah manipulasi)
         // Format waktu pengambilan (jam kedatangan hari ini)
         $waktuPengambilan = null;
         if (!empty($validated['waktu_pengambilan'])) {
             $waktuPengambilan = Carbon::createFromFormat('H:i', $validated['waktu_pengambilan'])->setDate(
                 now()->year, now()->month, now()->day
             );
-            // Jika jam yang dipilih sudah lewat hari ini, mungkin maksudnya besok, 
-            // tapi untuk restoran biasanya hari ini.
             if ($waktuPengambilan->isPast()) {
                 // Jangan error, tetap set aja sebagai target waktu.
             }
         }
 
-        // Validasi stok sebelum memproses pesanan (pengaman ganda backend)
-        foreach ($validated['items'] as $item) {
-            $menu = Menu::find($item['menu_id']);
-            if (!$menu || $menu->stok < $item['jumlah']) {
-                $namaMenu = $menu ? $menu->nama_menu : 'Menu tidak ditemukan';
-                return redirect()->back()->with('error', "Mohon maaf, stok {$namaMenu} tidak mencukupi.");
-            }
-        }
-
         DB::beginTransaction();
         try {
-            // Buat Order
+            // --- SECURITY & RACE CONDITION FIX ---
+            // 1. Kalkulasi harga murni dari database (bukan dari input frontend)
+            // 2. Gunakan lockForUpdate() agar stok tidak direbut pesanan lain yang masuk bersamaan
+            $totalHarga = 0;
+            $secureItems = [];
+
+            foreach ($validated['items'] as $item) {
+                $menu = Menu::lockForUpdate()->find($item['menu_id']);
+                
+                if (!$menu || $menu->stok < $item['jumlah']) {
+                    DB::rollBack();
+                    $namaMenu = $menu ? $menu->nama_menu : 'Menu tidak ditemukan';
+                    return redirect()->back()->with('error', "Mohon maaf, stok {$namaMenu} tidak mencukupi.");
+                }
+
+                $hargaAsli = $menu->harga;
+                $subtotal = $hargaAsli * $item['jumlah'];
+                $totalHarga += $subtotal;
+
+                $secureItems[] = [
+                    'menu_id'  => $menu->id,
+                    'jumlah'   => $item['jumlah'],
+                    'harga'    => $hargaAsli,
+                    'subtotal' => $subtotal,
+                ];
+            }
+
+            // Buat Order dengan total_harga yang sudah aman
             $order = Order::create([
                 'user_id'           => auth()->id(),
                 'total_harga'       => $totalHarga,
@@ -104,13 +115,13 @@ class CustomerOrderController extends Controller
             ]);
 
             // Buat Order Items & kurangi stok menu
-            foreach ($validated['items'] as $item) {
+            foreach ($secureItems as $item) {
                 OrderItem::create([
                     'order_id' => $order->id,
                     'menu_id'  => $item['menu_id'],
                     'jumlah'   => $item['jumlah'],
                     'harga'    => $item['harga'],
-                    'subtotal' => $item['harga'] * $item['jumlah'],
+                    'subtotal' => $item['subtotal'],
                 ]);
 
                 // Kurangi stok menu di database

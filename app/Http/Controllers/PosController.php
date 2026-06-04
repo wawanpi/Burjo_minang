@@ -129,27 +129,41 @@ class PosController extends Controller
 
         // ── Fase 1: Simpan pesanan ke database dalam satu transaksi ──────────
         $order = DB::transaction(function () use ($validated, $request, $metodePembayaranDb) {
-            // Validasi stok sebelum menyimpan order
+            // Validasi stok & kalkulasi ulang harga murni dari database (SECURITY FIX)
+            $totalHarga = 0;
+            $secureItems = [];
+
             foreach ($validated['cart_items'] as $item) {
                 $menu = Menu::lockForUpdate()->find($item['menu_id']);
                 if (!$menu || $menu->stok < $item['jumlah']) {
+                    $namaMenu = $menu ? $menu->nama_menu : 'Tidak dikenal';
+                    $sisaStok = $menu ? $menu->stok : 0;
                     throw ValidationException::withMessages([
-                        'cart' => "Stok untuk menu '{$menu->nama_menu}' tidak mencukupi (Tersisa: {$menu->stok})."
+                        'cart' => "Stok untuk menu '{$namaMenu}' tidak mencukupi (Tersisa: {$sisaStok})."
                     ]);
                 }
+
+                $subtotal = $menu->harga * $item['jumlah'];
+                $totalHarga += $subtotal;
+                
+                $secureItems[] = [
+                    'menu_id'  => $menu->id,
+                    'jumlah'   => $item['jumlah'],
+                    'subtotal' => $subtotal,
+                ];
             }
 
-            // Buat record Order dengan status menunggu_pembayaran
+            // Buat record Order dengan status menunggu_pembayaran dan harga murni
             $order = Order::create([
                 'user_id'        => $request->user()->id,
-                'total_harga'    => $validated['total_harga'],
+                'total_harga'    => $totalHarga,
                 'status_pesanan' => 'menunggu_pembayaran',
                 'tipe_pesanan'   => $validated['tipe_pesanan'],
                 'tanggal_pesan'  => now(),
             ]);
 
-            // Buat Order Items & Kurangi stok
-            foreach ($validated['cart_items'] as $item) {
+            // Buat Order Items & Kurangi stok menggunakan secureItems
+            foreach ($secureItems as $item) {
                 OrderItem::create([
                     'order_id' => $order->id,
                     'menu_id'  => $item['menu_id'],
@@ -201,7 +215,7 @@ class PosController extends Controller
         $params = [
             'transaction_details' => [
                 'order_id'     => $midtransOrderId,
-                'gross_amount' => (int) $validated['total_harga'],
+                'gross_amount' => (int) $order->total_harga,
             ],
             'customer_details' => [
                 'first_name' => 'Pelanggan Kasir',
