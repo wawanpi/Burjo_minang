@@ -199,60 +199,48 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
       </div>
 
       {/* Menu Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-24">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-6 pb-24">
         {filteredMenus.map(menu => {
           const cartItem = cart.find(c => c.menu.id === menu.id);
           const qty = cartItem ? cartItem.jumlah : 0;
 
           return (
-            <div key={menu.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col">
-              <div className="aspect-square bg-gray-100 flex items-center justify-center relative overflow-hidden">
+            <div key={menu.id} className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden flex flex-col active:scale-[0.98] transition-transform">
+              <div className="aspect-square bg-gray-50 dark:bg-gray-900 relative">
                 {menu.gambar ? (
                   <img src={`/storage/${menu.gambar}`} alt={menu.nama_menu} className="w-full h-full object-cover" />
                 ) : (
-                  <span className="text-4xl opacity-20">🍽️</span>
+                  <div className="w-full h-full flex items-center justify-center text-4xl opacity-20">🍽️</div>
                 )}
                 {/* Rating Badge */}
                 {menu.reviews_avg_rating !== null && menu.reviews_avg_rating > 0 && (
-                  <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-bold text-amber-500 flex items-center gap-1 shadow-sm">
-                    ⭐ {Number(menu.reviews_avg_rating).toFixed(1)} <span className="text-gray-400 font-normal">({menu.reviews_count})</span>
+                  <div className="absolute top-2 right-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-2 py-0.5 rounded-full text-xs font-bold text-orange-500 shadow-sm flex items-center gap-1">
+                    ⭐ {Number(menu.reviews_avg_rating).toFixed(1)}
                   </div>
                 )}
               </div>
-              <div className="p-4 flex flex-col flex-1">
-                <div className="text-xs text-amber-600 font-medium mb-1 uppercase tracking-wider">{menu.kategori}</div>
-                <h3 className="font-bold text-gray-900 dark:text-white leading-tight mb-2 line-clamp-2">{menu.nama_menu}</h3>
-                <div className="mt-auto">
-                  <div className="font-bold text-amber-600 mb-3">{formatRupiah(menu.harga)}</div>
+              
+              <div className="p-3 sm:p-4 flex flex-col flex-1">
+                <div className="text-[10px] text-orange-500 font-bold mb-1 uppercase tracking-wider">{menu.kategori}</div>
+                <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white leading-tight mb-2 line-clamp-2">{menu.nama_menu}</h3>
+                
+                <div className="mt-auto pt-2">
+                  <div className="font-bold text-orange-500 mb-3 text-sm sm:text-base">{formatRupiah(menu.harga)}</div>
                   
                   {/* Add to Cart Control */}
                   {menu.stok <= 0 ? (
-                    <button 
-                      disabled
-                      className="w-full py-2 bg-gray-200 text-gray-400 font-medium rounded-xl text-sm border border-gray-200 cursor-not-allowed opacity-60"
-                    >
+                    <button disabled className="w-full py-2 bg-gray-100 text-gray-400 font-bold rounded-xl text-xs sm:text-sm border border-gray-200 cursor-not-allowed">
                       Habis
                     </button>
                   ) : qty === 0 ? (
-                    <button 
-                      onClick={() => addToCart(menu)}
-                      className="w-full py-2 bg-gray-100 hover:bg-amber-50 text-gray-800 hover:text-amber-600 font-medium rounded-xl transition-colors text-sm border border-gray-200"
-                    >
+                    <button onClick={() => addToCart(menu)} className="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-xl transition-colors text-xs sm:text-sm shadow-sm hover:shadow active:scale-95">
                       + Tambah
                     </button>
                   ) : (
-                    <div className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-xl p-1">
-                      <button onClick={() => updateQuantity(menu.id, -1)} className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm text-amber-600 font-bold hover:bg-amber-100">
-                        -
-                      </button>
-                      <span className="font-bold text-gray-800">{qty}</span>
-                      <button 
-                        onClick={() => updateQuantity(menu.id, 1)} 
-                        disabled={qty >= menu.stok}
-                        className={`w-8 h-8 flex items-center justify-center rounded-lg shadow-sm font-bold ${qty >= menu.stok ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 'bg-amber-500 text-white hover:bg-amber-600'}`}
-                      >
-                        +
-                      </button>
+                    <div className="flex items-center justify-between bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-500/30 rounded-xl p-1">
+                      <button onClick={() => updateQuantity(menu.id, -1)} className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center bg-white dark:bg-gray-800 rounded-lg shadow-sm text-orange-600 font-bold active:bg-orange-100">-</button>
+                      <span className="font-bold text-gray-800 dark:text-gray-200 text-xs sm:text-sm">{qty}</span>
+                      <button onClick={() => updateQuantity(menu.id, 1)} disabled={qty >= menu.stok} className={`w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg shadow-sm font-bold ${qty >= menu.stok ? 'bg-gray-300 text-gray-400 cursor-not-allowed' : 'bg-orange-500 text-white active:bg-orange-600'}`}>+</button>
                     </div>
                   )}
                 </div>
@@ -262,27 +250,29 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
         })}
       </div>
 
-      {/* Floating Cart Button */}
+      {/* Floating Cart Button (Mobile-First Sticky Bottom) */}
       {cartCount > 0 && !showCart && (
-        <div className="fixed bottom-20 sm:bottom-6 left-4 right-4 max-w-4xl mx-auto z-50 animate-toast-in">
-          <div 
+        <div className="fixed bottom-20 left-4 right-4 z-50 animate-toast-in md:bottom-8 md:max-w-md md:left-auto md:right-8">
+          <button 
             onClick={() => setShowCart(true)}
-            className="bg-amber-500 text-white rounded-2xl p-4 shadow-lg flex items-center justify-between cursor-pointer hover:bg-amber-600 transition-colors"
+            className="w-full bg-gray-900 dark:bg-gray-800 border border-gray-800 dark:border-gray-700 text-white rounded-full p-4 flex items-center justify-between shadow-2xl hover:bg-black transition-all active:scale-[0.98]"
           >
             <div className="flex items-center gap-3">
-              <div className="bg-white/20 w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg">
-                🛍️
+              <div className="bg-white/20 rounded-full p-2.5 relative">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                <span className="absolute -top-1.5 -right-1.5 bg-orange-500 border-2 border-gray-900 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm">
+                  {cartCount}
+                </span>
               </div>
-              <div>
-                <p className="text-xs font-medium text-amber-100">Keranjang ({cartCount} Item)</p>
-                <p className="font-bold text-lg">{formatRupiah(cartTotal)}</p>
-              </div>
+              <span className="font-semibold text-sm sm:text-base tracking-wide">
+                Lihat Keranjang
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold">Checkout</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
-            </div>
-          </div>
+            
+            <span className="font-bold text-orange-400 text-sm sm:text-base tracking-wide">
+              {formatRupiah(cartTotal)}
+            </span>
+          </button>
         </div>
       )}
 
