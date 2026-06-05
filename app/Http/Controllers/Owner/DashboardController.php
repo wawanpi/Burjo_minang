@@ -7,8 +7,22 @@ use App\Models\Order;
 use Carbon\Carbon;
 use Inertia\Inertia;
 
+/**
+ * DashboardController — Menampilkan ringkasan statistik bisnis.
+ *
+ * Data yang disajikan:
+ * - Total pendapatan (seluruh waktu & bulan ini)
+ * - Jumlah pesanan (total, hari ini, pending)
+ * - Grafik pendapatan 30 hari terakhir
+ * - 5 pesanan terbaru
+ */
 class DashboardController extends Controller
 {
+    /**
+     * Menampilkan halaman dashboard dengan statistik dan grafik.
+     *
+     * @return \Inertia\Response
+     */
     public function index(): \Inertia\Response
     {
         // 1. Total Pendapatan: Sum total_harga dari orders yang payment-nya lunas

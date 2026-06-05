@@ -8,9 +8,19 @@ use App\Models\Review;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
+/**
+ * ReviewController — Menampilkan daftar ulasan pelanggan untuk Owner.
+ *
+ * Owner dapat memfilter ulasan berdasarkan menu tertentu atau rating.
+ */
 class ReviewController extends Controller
 {
-    // GET /api/owner/reviews?menu_id=1&rating=5
+    /**
+     * Menampilkan daftar ulasan dengan filter opsional.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Inertia\Response
+     */
     public function index(Request $request)
     {
         $request->validate([

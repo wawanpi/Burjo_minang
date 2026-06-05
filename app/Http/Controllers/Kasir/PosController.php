@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Kasir;
 
+use App\Http\Controllers\Controller;
 use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -12,8 +13,25 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 
+/**
+ * PosController — Menangani transaksi Point of Sale (Kasir Offline).
+ *
+ * Controller ini menangani dua jenis transaksi kasir:
+ * 1. Tunai  → Langsung lunas, tanpa gateway pembayaran.
+ * 2. Digital → Menggunakan Midtrans Snap (QRIS / Transfer Bank).
+ *
+ * Semua transaksi menggunakan DB::transaction dan lockForUpdate()
+ * untuk mencegah race condition pada stok menu.
+ */
 class PosController extends Controller
 {
+    /**
+     * Menampilkan halaman Point of Sale (POS) dengan daftar menu yang tersedia.
+     *
+     * Hanya menampilkan menu yang stoknya > 0.
+     *
+     * @return \Inertia\Response
+     */
     public function index()
     {
         $menus = Menu::where('stok', '>', 0)
@@ -26,47 +44,80 @@ class PosController extends Controller
             ->orderBy('kategori')
             ->pluck('kategori');
 
-        return Inertia::render('Pos/Index', [
+        return Inertia::render('Kasir/Pos/Index', [
             'menus'        => $menus,
             'kategoriList' => $kategoriList,
         ]);
     }
 
+    /**
+     * Memproses transaksi tunai dari kasir.
+     *
+     * Alur:
+     * 1. Validasi stok dengan lockForUpdate() untuk atomicity.
+     * 2. Buat record Order, OrderItem, dan Payment.
+     * 3. Kurangi stok menu.
+     * 4. Redirect dengan flash message berisi nominal kembalian.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function storeOrderTunai(Request $request)
     {
         $validated = $request->validate([
             'cart_items'            => ['required', 'array', 'min:1'],
-            'cart_items.*.menu_id'  => ['required', 'exists:menus,id'],
+            'cart_items.*.menu_id'  => ['required', 'exists:menus,id', 'distinct'],
             'cart_items.*.jumlah'   => ['required', 'integer', 'min:1'],
             'cart_items.*.subtotal' => ['required', 'numeric', 'min:0'],
             'total_harga'           => ['required', 'numeric', 'min:0'],
-            'uang_diterima'         => ['required', 'numeric', 'min:' . $request->input('total_harga', 0)],
+            'uang_diterima'         => ['required', 'numeric', 'min:0'],
             'metode_pembayaran'     => ['required', 'in:Tunai'],
             'tipe_pesanan'          => ['required', 'in:dine_in,take_away'],
         ]);
 
         $order = DB::transaction(function () use ($validated, $request) {
-            // 1. Validasi stok menu yang dipesan (Memastikan stok cukup di database)
+            // 1. Validasi stok & kalkulasi harga murni dari database
+            $totalHarga = 0;
+            $secureItems = [];
+
             foreach ($validated['cart_items'] as $item) {
                 $menu = Menu::lockForUpdate()->find($item['menu_id']);
                 if (!$menu || $menu->stok < $item['jumlah']) {
+                    $namaMenu = $menu ? $menu->nama_menu : 'Tidak dikenal';
+                    $sisaStok = $menu ? $menu->stok : 0;
                     throw ValidationException::withMessages([
-                        'cart' => "Stok untuk menu '{$menu->nama_menu}' tidak mencukupi (Tersisa: {$menu->stok})."
+                        'cart' => "Stok untuk menu '{$namaMenu}' tidak mencukupi (Tersisa: {$sisaStok})."
                     ]);
                 }
+
+                $subtotal = $menu->harga * $item['jumlah'];
+                $totalHarga += $subtotal;
+
+                $secureItems[] = [
+                    'menu_id'  => $menu->id,
+                    'jumlah'   => $item['jumlah'],
+                    'subtotal' => $subtotal,
+                ];
+            }
+
+            // Validasi uang kembalian tidak boleh kurang dari harga murni
+            if ($validated['uang_diterima'] < $totalHarga) {
+                throw ValidationException::withMessages([
+                    'uang_diterima' => 'Uang yang diterima kurang dari total harga murni.'
+                ]);
             }
 
             // 2. Buat record di tabel orders
             $order = Order::create([
                 'user_id'         => $request->user()->id,
-                'total_harga'     => $validated['total_harga'],
+                'total_harga'     => $totalHarga,
                 'status_pesanan'  => 'diproses', // Diubah menjadi diproses agar terlihat di dapur
                 'tipe_pesanan'    => $validated['tipe_pesanan'],
                 'tanggal_pesan'   => now(),
             ]);
 
-            // 3. Buat record di tabel order_items & Kurangi stok (Langkah 5)
-            foreach ($validated['cart_items'] as $item) {
+            // 3. Buat record di tabel order_items & Kurangi stok
+            foreach ($secureItems as $item) {
                 OrderItem::create([
                     'order_id' => $order->id,
                     'menu_id'  => $item['menu_id'],
@@ -74,7 +125,7 @@ class PosController extends Controller
                     'subtotal' => $item['subtotal'],
                 ]);
 
-                // 5. Kurangi stok menu secara langsung di tabel menus
+                // Kurangi stok menu secara langsung di tabel menus
                 Menu::where('id', $item['menu_id'])->decrement('stok', $item['jumlah']);
             }
 
@@ -91,21 +142,31 @@ class PosController extends Controller
             return $order;
         });
 
-        // 6. Return Inertia redirect ke halaman riwayat pesanan (pos.index) dengan flash message
+        // Return redirect dengan flash message berisi nominal kembalian
         return redirect()
-            ->route('kasir.pos.index') // Asumsi route name untuk POS
+            ->route('kasir.pos.index')
             ->with('success', "Transaksi Tunai #$order->id Berhasil! Uang Kembalian: Rp " . number_format($validated['uang_diterima'] - $validated['total_harga'], 0, ',', '.'));
     }
 
     /**
-     * Proses checkout QRIS / Virtual Account Midtrans dari Kasir (POS Digital)
-     * Mengembalikan JSON { snap_token, order_id } ke frontend React.
+     * Memproses transaksi digital (QRIS / Transfer Bank) dari kasir via Midtrans Snap.
+     *
+     * Alur:
+     * 1. Validasi stok & kalkulasi ulang harga dari database (mencegah manipulasi).
+     * 2. Simpan Order, OrderItem, Payment dalam DB::transaction.
+     * 3. Generate Midtrans Snap Token.
+     * 4. Kembalikan snap_token ke frontend sebagai JSON.
+     *
+     * Jika Midtrans gagal, seluruh order di-rollback dan stok dikembalikan.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function storeOrderDigital(Request $request)
     {
         $validated = $request->validate([
             'cart_items'            => ['required', 'array', 'min:1'],
-            'cart_items.*.menu_id'  => ['required', 'exists:menus,id'],
+            'cart_items.*.menu_id'  => ['required', 'exists:menus,id', 'distinct'],
             'cart_items.*.jumlah'   => ['required', 'integer', 'min:1'],
             'cart_items.*.subtotal' => ['required', 'numeric', 'min:0'],
             'total_harga'           => ['required', 'numeric', 'min:1'],
@@ -176,7 +237,7 @@ class PosController extends Controller
             // Buat record Payment — gunakan $metodePembayaranDb (sudah di-mapping)
             Payment::create([
                 'order_id'          => $order->id,
-                'metode_pembayaran' => $metodePembayaranDb, // ✅ 'Transfer Bank' atau 'QRIS'
+                'metode_pembayaran' => $metodePembayaranDb, // 'Transfer Bank' atau 'QRIS'
                 'status_pembayaran' => 'pending',
                 'payment_token'     => null,
                 'transaction_id'    => null,

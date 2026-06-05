@@ -1,13 +1,26 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Menu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
+/**
+ * PaymentCallbackController — Webhook handler untuk notifikasi Midtrans.
+ *
+ * Controller ini TIDAK diakses oleh user/browser. Ia hanya dipanggil
+ * oleh server Midtrans melalui HTTP POST ke endpoint /api/payment-callback.
+ *
+ * Tugas utama:
+ * 1. Memvalidasi payload notifikasi dari Midtrans (signature verification).
+ * 2. Memetakan transaction_status Midtrans ke status internal aplikasi.
+ * 3. Mengembalikan stok menu (restock) jika pembayaran gagal/expired.
+ * 4. Mengembalikan HTTP 200 agar Midtrans tidak melakukan retry.
+ */
 class PaymentCallbackController extends Controller
 {
     /**
@@ -20,7 +33,9 @@ class PaymentCallbackController extends Controller
      *   - 'ORDER-{db_id}-{timestamp}'   → pesanan online Customer
      *   - 'KASIR-{db_id}-{timestamp}'   → pesanan offline POS Kasir
      *   - '{db_id}'                      → format tanpa prefix (fallback)
-     *   - Format apapun selama mengandung angka db_id di dalamnya
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\JsonResponse
      */
     public function callback(Request $request)
     {

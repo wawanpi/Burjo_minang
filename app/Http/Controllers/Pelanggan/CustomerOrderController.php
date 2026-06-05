@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Pelanggan;
 
+use App\Http\Controllers\Controller;
 use App\Models\Menu;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -13,10 +14,24 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
+/**
+ * CustomerOrderController — Menangani seluruh alur pemesanan pelanggan online.
+ *
+ * Controller ini mencakup:
+ * 1. Menampilkan daftar menu dengan rating.
+ * 2. Proses checkout dengan integrasi Midtrans Snap.
+ * 3. Menampilkan riwayat pesanan (aktif & selesai).
+ * 4. Menyimpan ulasan/review pelanggan.
+ */
 class CustomerOrderController extends Controller
 {
     /**
-     * Menampilkan halaman menu pemesanan online untuk pelanggan
+     * Menampilkan halaman menu pemesanan online untuk pelanggan.
+     *
+     * Menu ditampilkan beserta rating rata-rata dan jumlah review
+     * agar pelanggan bisa memilih berdasarkan popularitas.
+     *
+     * @return \Inertia\Response
      */
     public function index()
     {
@@ -38,13 +53,21 @@ class CustomerOrderController extends Controller
     }
 
     /**
-     * Memproses checkout pesanan dari keranjang sesuai dengan form baru di Menu.tsx
+     * Memproses checkout pesanan pelanggan dan generate Midtrans Snap Token.
+     *
+     * Alur keamanan:
+     * 1. Harga dihitung ulang dari database (mencegah manipulasi frontend).
+     * 2. Stok dikunci dengan lockForUpdate() untuk mencegah race condition.
+     * 3. Midtrans Snap Token di-generate setelah order tersimpan.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Inertia\Response|\Illuminate\Http\RedirectResponse
      */
     public function store(Request $request)
     {
         $validated = $request->validate([
             'items'                 => ['required', 'array', 'min:1'],
-            'items.*.menu_id'       => ['required', 'exists:menus,id'],
+            'items.*.menu_id'       => ['required', 'exists:menus,id', 'distinct'],
             'items.*.jumlah'        => ['required', 'integer', 'min:1'],
             'items.*.harga'         => ['required', 'numeric', 'min:0'],
             'tipe_pesanan'          => ['required', 'in:dine_in,take_away'],
@@ -59,16 +82,12 @@ class CustomerOrderController extends Controller
             ],
         ]);
 
-        // (Harga dan Subtotal tidak dihitung di sini lagi untuk mencegah manipulasi)
         // Format waktu pengambilan (jam kedatangan hari ini)
         $waktuPengambilan = null;
         if (!empty($validated['waktu_pengambilan'])) {
             $waktuPengambilan = Carbon::createFromFormat('H:i', $validated['waktu_pengambilan'])->setDate(
                 now()->year, now()->month, now()->day
             );
-            if ($waktuPengambilan->isPast()) {
-                // Jangan error, tetap set aja sebagai target waktu.
-            }
         }
 
         DB::beginTransaction();
@@ -100,7 +119,7 @@ class CustomerOrderController extends Controller
                 ];
             }
 
-            // Buat Order dengan total_harga yang sudah aman
+            // Buat Order dengan total_harga yang sudah aman (dari database, bukan frontend)
             $order = Order::create([
                 'user_id'           => auth()->id(),
                 'total_harga'       => $totalHarga,
@@ -155,7 +174,7 @@ class CustomerOrderController extends Controller
                 ];
             }
 
-            // Menentukan enabled_payments berdasarkan pilihan user
+            // Tentukan enabled_payments berdasarkan pilihan pelanggan
             $enabledPayments = [];
             if ($validated['metode_pembayaran'] === 'QRIS') {
                 $enabledPayments = ['gopay', 'shopeepay', 'other_qris'];
@@ -196,15 +215,14 @@ class CustomerOrderController extends Controller
                 ]);
 
                 // Redirect pelanggan langsung ke halaman pembayaran Midtrans Snap
-                // Pastikan menggunakan Inertia::location untuk navigasi eksternal
                 return Inertia::location($paymentUrl);
+
             } catch (\Exception $midtransError) {
                 Log::error('Midtrans Snap Creation Failed', [
                     'order_id' => $order->id,
                     'error'    => $midtransError->getMessage(),
                 ]);
 
-                // Kembalikan response dengan pesan error yang jelas alih-alih redirect diam-diam
                 return redirect()->back()->with('error', 'Gagal menghubungi Payment Gateway: ' . $midtransError->getMessage());
             }
         } catch (\Exception $e) {
@@ -214,12 +232,19 @@ class CustomerOrderController extends Controller
     }
 
     /**
-     * Menampilkan tab Pesanan Aktif dan Riwayat Pesanan
+     * Menampilkan halaman pesanan pelanggan (tab Aktif & Riwayat).
+     *
+     * Fitur auto-cancel: Pesanan 'menunggu_pembayaran' yang lebih dari 5 menit
+     * otomatis dibatalkan dan stoknya dikembalikan.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Inertia\Response
      */
     public function orders(Request $request)
     {
         // 1. Auto-Cancel Dinamis: Batalkan pesanan 'menunggu_pembayaran' yang umurnya > 5 menit
-        $expiredOrders = Order::where('user_id', auth()->id())
+        $expiredOrders = Order::with(['orderItems', 'payment'])
+            ->where('user_id', auth()->id())
             ->where('status_pesanan', 'menunggu_pembayaran')
             ->where('created_at', '<', now()->subMinutes(5))
             ->get();
@@ -227,6 +252,10 @@ class CustomerOrderController extends Controller
         if ($expiredOrders->count() > 0) {
             foreach ($expiredOrders as $expOrder) {
                 $expOrder->update(['status_pesanan' => 'batal']);
+                
+                if ($expOrder->payment) {
+                    $expOrder->payment->update(['status_pembayaran' => 'gagal']);
+                }
                 
                 // Kembalikan stok menu jika pesanan dibatalkan otomatis
                 foreach ($expOrder->orderItems as $item) {
@@ -250,7 +279,7 @@ class CustomerOrderController extends Controller
 
         $orders = $baseQuery->latest('tanggal_pesan')->get();
 
-        // Transform data
+        // Transform data agar format konsisten untuk frontend
         $transformedOrders = $orders->map(function ($order) {
             $sisaMenit = null;
             if ($order->waktu_pengambilan && $order->status_pesanan === 'diproses') {
@@ -261,9 +290,9 @@ class CustomerOrderController extends Controller
                 'id'                 => $order->id,
                 'total_harga'        => (float) $order->total_harga,
                 'status_pesanan'     => $order->status_pesanan,
-                'tanggal_pesan'      => $order->tanggal_pesan ? \Carbon\Carbon::parse($order->tanggal_pesan)->toISOString() : null,
+                'tanggal_pesan'      => $order->tanggal_pesan ? Carbon::parse($order->tanggal_pesan)->toISOString() : null,
                 'tipe_pesanan'       => $order->tipe_pesanan,
-                'waktu_pengambilan'  => $order->waktu_pengambilan ? \Carbon\Carbon::parse($order->waktu_pengambilan)->toISOString() : null,
+                'waktu_pengambilan'  => $order->waktu_pengambilan ? Carbon::parse($order->waktu_pengambilan)->toISOString() : null,
                 'sisa_menit'         => $sisaMenit,
                 'payment'            => $order->payment ? [
                     'metode_pembayaran' => $order->payment->metode_pembayaran,
@@ -300,7 +329,16 @@ class CustomerOrderController extends Controller
     }
 
     /**
-     * Menyimpan ulasan dari sebuah pesanan
+     * Menyimpan ulasan/review pelanggan untuk menu yang sudah dipesan.
+     *
+     * Validasi:
+     * - Pesanan harus milik user yang login.
+     * - Status pesanan harus 'selesai'.
+     * - Satu user hanya bisa review satu kali per menu.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Order         $order
+     * @return \Illuminate\Http\RedirectResponse
      */
     public function storeReview(Request $request, Order $order)
     {

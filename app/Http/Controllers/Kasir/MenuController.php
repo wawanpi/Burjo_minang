@@ -1,14 +1,27 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Kasir;
 
+use App\Http\Controllers\Controller;
 use App\Models\Menu;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
+/**
+ * MenuController — Mengelola CRUD data menu makanan/minuman.
+ *
+ * Controller ini digunakan oleh Kasir dan Owner untuk menambah,
+ * mengedit, menghapus, dan mencari menu yang tersedia di toko.
+ */
 class MenuController extends Controller
 {
+    /**
+     * Menampilkan daftar seluruh menu dengan fitur pencarian.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Inertia\Response
+     */
     public function index(Request $request)
     {
         $search = $request->input('search');
@@ -26,13 +39,19 @@ class MenuController extends Controller
             ->orderBy('kategori')
             ->pluck('kategori');
 
-        return Inertia::render('Menus/Index', [
+        return Inertia::render('Kasir/Menus/Index', [
             'menus'        => $menus,
             'kategoriList' => $kategoriList,
             'filters'      => ['search' => $search],
         ]);
     }
 
+    /**
+     * Menyimpan menu baru ke database.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -54,6 +73,13 @@ class MenuController extends Controller
             ->with('success', 'Menu berhasil ditambahkan!');
     }
 
+    /**
+     * Memperbarui data menu yang sudah ada.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Menu          $menu
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function update(Request $request, Menu $menu)
     {
         $validated = $request->validate([
@@ -77,6 +103,12 @@ class MenuController extends Controller
             ->with('success', 'Menu berhasil diperbarui!');
     }
 
+    /**
+     * Menghapus menu dari database.
+     *
+     * @param  \App\Models\Menu  $menu
+     * @return \Illuminate\Http\RedirectResponse
+     */
     public function destroy(Menu $menu)
     {
         $menu->delete();
