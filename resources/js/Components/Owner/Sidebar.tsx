@@ -13,7 +13,7 @@ const navItems: NavItem[] = [
 
         label: "Dashboard",
 
-        href: "/kasir/dashboard",
+        href: "/owner/dashboard",
 
         icon: (
 
@@ -118,7 +118,7 @@ const navItems: NavItem[] = [
 
 
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIsOpen?: (val: boolean) => void }) {
     const { url, props } = usePage();
     const userRole = (props.auth as any)?.user?.role;
 
@@ -134,16 +134,18 @@ export default function Sidebar() {
 
     return (
 
-        <aside className="w-64 bg-[#b44b1c] text-white flex flex-col min-h-screen fixed left-0 top-0 bottom-0 shadow-xl z-50">
+        <aside className={`w-64 bg-[#b44b1c] text-white flex flex-col min-h-screen fixed left-0 top-0 bottom-0 shadow-xl z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
 
             {/* Header Sidebar */}
-
-            <div className="flex items-center gap-3 px-6 py-6 border-b border-white/10">
-
-                <span className="text-3xl">🍜</span>
-
-                <span className="text-2xl font-bold tracking-wider">Burjo Minang</span>
-
+            <div className="flex items-center justify-between px-6 py-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                    <span className="text-3xl">🍜</span>
+                    <span className="text-2xl font-bold tracking-wider">Burjo Minang</span>
+                </div>
+                {/* Tombol Tutup Khusus Mobile */}
+                <button onClick={() => setIsOpen && setIsOpen(false)} className="lg:hidden p-1 rounded-md hover:bg-white/10 text-white/70 hover:text-white">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
             </div>
 
 
