@@ -406,30 +406,37 @@ export default function OrderIndex({ orders, filters }: Props) {
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex flex-col items-center gap-2">
-                                                    {order.payment?.metode_pembayaran !== 'Tunai' && order.status_pesanan === 'menunggu_pembayaran' ? (
-                                                        <div className="w-full px-2 py-1.5 text-[11px] font-bold text-center rounded-lg border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed" title="Menunggu konfirmasi otomatis dari Midtrans">
-                                                            Menunggu Sistem...
-                                                        </div>
-                                                    ) : (
-                                                        <select
-                                                            value={order.status_pesanan}
-                                                            onChange={(e) => handleUpdateStatus(order, e.target.value)}
-                                                            className="w-full px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all cursor-pointer disabled:opacity-75"
-                                                            disabled={order.status_pesanan === 'batal' || order.status_pesanan === 'selesai'}
-                                                        >
-                                                            {renderStatusOptions(order)}
-                                                        </select>
-                                                    )}
-                                                    
-                                                    <button
-                                                        onClick={() => handlePrintNota(order.id)}
-                                                        className="w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                                                    >
-                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                                        </svg>
-                                                        Cetak Nota
-                                                    </button>
+                                                {order.status_pesanan === 'batal' ? (
+                                                    <span className="text-xs text-gray-300 italic">—</span>
+                                                ) : (
+                                                    <>
+                                                        {order.payment?.metode_pembayaran !== 'Tunai' && order.status_pesanan === 'menunggu_pembayaran' ? (
+                                                            <div className="w-full px-2 py-1.5 text-[11px] font-bold text-center rounded-lg border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed" title="Menunggu konfirmasi otomatis dari Midtrans">
+                                                                Menunggu Sistem...
+                                                            </div>
+                                                        ) : order.status_pesanan !== 'selesai' && (
+                                                            <select
+                                                                value={order.status_pesanan}
+                                                                onChange={(e) => handleUpdateStatus(order, e.target.value)}
+                                                                className="w-full px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all cursor-pointer"
+                                                            >
+                                                                {renderStatusOptions(order)}
+                                                            </select>
+                                                        )}
+
+                                                        {order.status_pesanan !== 'menunggu_pembayaran' && (
+                                                            <button
+                                                                onClick={() => handlePrintNota(order.id)}
+                                                                className="w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                                            >
+                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                                                </svg>
+                                                                Cetak Nota
+                                                            </button>
+                                                        )}
+                                                    </>
+                                                )}
                                                 </div>
                                             </td>
                                         </tr>

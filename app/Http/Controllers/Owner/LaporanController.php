@@ -183,7 +183,7 @@ class LaporanController extends Controller
             default     => 'Semua Tipe',
         };
 
-        return view('laporan.print', [
+        return Inertia::render('Owner/Laporan/Print', [
             'orders'          => $orders,
             'totalPendapatan' => $totalPendapatan,
             'tipeFilter'      => $request->tipe,

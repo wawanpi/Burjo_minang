@@ -97,6 +97,7 @@ class OrderManagementController extends Controller
 
         return Inertia::render('Orders/Nota', [
             'order' => $order,
+            'kasir' => auth()->user(), // Kasir / Owner yang sedang login
         ]);
     }
 }
