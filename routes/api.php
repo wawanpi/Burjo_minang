@@ -1,7 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\PaymentCallbackController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\PaymentCallbackController;
 
-// Webhook untuk Midtrans (Otomatis bebas CSRF Token karena berada di api.php)
+// ─── Webhook Midtrans ────────────────────────────────────────────────────
+// Otomatis bebas CSRF Token karena berada di api.php
 Route::post('/payment-callback', [PaymentCallbackController::class, 'callback']);

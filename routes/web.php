@@ -1,41 +1,63 @@
 <?php
 
-use App\Http\Controllers\MenuController;
-use App\Http\Controllers\OrderManagementController;
-use App\Http\Controllers\PosController;
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║                     ROUTES — BURJOMINANG RM                            ║
+// ║  Dikelompokkan berdasarkan aktor: Owner, Kasir, Pelanggan, API         ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+
+// ─── Import Controller: Owner (Eksklusif) ────────────────────────────────
 use App\Http\Controllers\Owner\AccountController;
 use App\Http\Controllers\Owner\DashboardController;
 use App\Http\Controllers\Owner\LaporanController;
 use App\Http\Controllers\Owner\ReviewController;
+
+// ─── Import Controller: Kasir (Owner + Kasir) ───────────────────────────
+use App\Http\Controllers\Kasir\MenuController;
+use App\Http\Controllers\Kasir\OrderManagementController;
+use App\Http\Controllers\Kasir\PosController;
+
+// ─── Import Controller: Pelanggan ────────────────────────────────────────
+use App\Http\Controllers\Pelanggan\CustomerOrderController;
+
+// ─── Import Facade ───────────────────────────────────────────────────────
 use Illuminate\Support\Facades\Route;
 
-// ─── Route Publik (Breeze) ────────────────────────────────
+// ─── Route Publik (Breeze Auth) ──────────────────────────────────────────
 require __DIR__.'/auth.php';
 
-// ─── Route Owner (Eksklusif) ─────────────────────────────
-// Hanya role 'owner' yang bisa mengakses: Laporan, Ulasan, Manajemen Akun
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  1. ROUTE OWNER (Eksklusif)                                            ║
+// ║  Hanya role 'owner' yang bisa mengakses: Laporan, Ulasan, Akun         ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 Route::middleware(['auth', 'role:owner'])
     ->prefix('owner')
     ->name('owner.')
     ->group(function () {
 
-        // Laporan
+        // Dashboard Khusus Owner
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        // Laporan Keuangan
         Route::get('/laporan', [LaporanController::class, 'index'])
             ->name('laporan');
         Route::get('/laporan/print', [LaporanController::class, 'print'])
             ->name('laporan.print');
 
-        // Ulasan/Reviews
+        // Ulasan / Reviews
         Route::get('/reviews', [ReviewController::class, 'index'])
             ->name('reviews');
 
-        // Manajemen Akun
+        // Manajemen Akun (CRUD)
         Route::resource('accounts', AccountController::class)
             ->except(['show']);
     });
 
-// ─── Route Kasir (Owner + Kasir) ─────────────────────────
-// Generalisasi: Owner mewarisi semua fitur Kasir
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  2. ROUTE KASIR (Owner + Kasir)                                        ║
+// ║  Owner mewarisi semua hak akses Kasir                                  ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 Route::middleware(['auth', 'role:owner,kasir'])
     ->prefix('kasir')
     ->name('kasir.')
@@ -61,21 +83,27 @@ Route::middleware(['auth', 'role:owner,kasir'])
         Route::post('/pos/digital', [PosController::class, 'storeOrderDigital'])->name('pos.digital');
     });
 
-use App\Http\Controllers\CustomerOrderController;
 
-// ─── Route Pelanggan (Customer) ──────────────────────────
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  3. ROUTE PELANGGAN (Customer)                                         ║
+// ║  Hanya role 'pelanggan' yang bisa mengakses                            ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 Route::middleware(['auth', 'role:pelanggan'])
     ->prefix('customer')
     ->name('customer.')
     ->group(function () {
         Route::get('/menu', [CustomerOrderController::class, 'index'])->name('menu');
         Route::post('/menu/checkout', [CustomerOrderController::class, 'store'])->name('checkout');
-        
+
         Route::get('/orders', [CustomerOrderController::class, 'orders'])->name('orders');
         Route::post('/orders/{order}/review', [CustomerOrderController::class, 'storeReview'])->name('reviews.store');
     });
 
-// ─── Routing Cerdas untuk Root (/) ──────────────────────────
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  4. ROUTING CERDAS ROOT (/)                                            ║
+// ║  Redirect otomatis berdasarkan role user yang sedang login              ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
 Route::get('/', function () {
     if (!auth()->check()) {
         return redirect()->route('login');
@@ -84,7 +112,7 @@ Route::get('/', function () {
     $role = auth()->user()->role;
 
     if ($role === 'owner') {
-        return redirect()->route('kasir.dashboard');
+        return redirect()->route('owner.dashboard');
     }
 
     if ($role === 'kasir') {

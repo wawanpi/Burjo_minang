@@ -36,16 +36,20 @@ class AuthenticatedSessionController extends Controller
         // ─── LOGIKA REDIRECT BERDASARKAN ROLE ───
         $role = $request->user()->role;
 
-        // Jika yang login adalah owner, arahkan ke dashboard owner
         if ($role === 'owner') {
             return redirect()->intended(route('owner.dashboard', absolute: false));
         }
 
-        // Sementara untuk kasir dan pelanggan arahkan ke halaman utama '/'
-        // Nanti bisa kamu sesuaikan lagi kalau route mereka sudah dibuat
+        if ($role === 'kasir') {
+            return redirect()->intended(route('kasir.dashboard', absolute: false));
+        }
+
+        if ($role === 'pelanggan') {
+            return redirect()->intended(route('customer.menu', absolute: false));
+        }
+
         return redirect()->intended('/');
     }
-
     /**
      * Destroy an authenticated session.
      */
