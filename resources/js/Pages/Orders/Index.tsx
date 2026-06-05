@@ -406,14 +406,20 @@ export default function OrderIndex({ orders, filters }: Props) {
                                             </td>
                                             <td className="px-6 py-4 text-center">
                                                 <div className="flex flex-col items-center gap-2">
-                                                    <select
-                                                        value={order.status_pesanan}
-                                                        onChange={(e) => handleUpdateStatus(order, e.target.value)}
-                                                        className="w-full px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all cursor-pointer disabled:opacity-75"
-                                                        disabled={order.status_pesanan === 'batal'} // Fully disable if already cancelled
-                                                    >
-                                                        {renderStatusOptions(order)}
-                                                    </select>
+                                                    {order.payment?.metode_pembayaran !== 'Tunai' && order.status_pesanan === 'menunggu_pembayaran' ? (
+                                                        <div className="w-full px-2 py-1.5 text-[11px] font-bold text-center rounded-lg border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed" title="Menunggu konfirmasi otomatis dari Midtrans">
+                                                            Menunggu Sistem...
+                                                        </div>
+                                                    ) : (
+                                                        <select
+                                                            value={order.status_pesanan}
+                                                            onChange={(e) => handleUpdateStatus(order, e.target.value)}
+                                                            className="w-full px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all cursor-pointer disabled:opacity-75"
+                                                            disabled={order.status_pesanan === 'batal' || order.status_pesanan === 'selesai'}
+                                                        >
+                                                            {renderStatusOptions(order)}
+                                                        </select>
+                                                    )}
                                                     
                                                     <button
                                                         onClick={() => handlePrintNota(order.id)}

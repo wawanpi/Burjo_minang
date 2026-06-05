@@ -1,11 +1,15 @@
 import { ReactNode } from "react";
-import { Head } from "@inertiajs/react";
+import { Head, usePage } from "@inertiajs/react";
 import Sidebar from "@/Components/Owner/Sidebar";
 
 export default function OwnerLayout({ title, children }: { title?: string; children: ReactNode }) {
+    const { props } = usePage();
+    const userRole = (props.auth as any)?.user?.role;
+    const panelLabel = userRole === 'owner' ? 'Owner Panel' : 'Kasir Panel';
+
     return (
         <div className="min-h-screen bg-gray-50 flex">
-            {title && <Head title={`${title} — Owner Panel`} />}
+            {title && <Head title={`${title} — ${panelLabel}`} />}
 
             {/* Sidebar Komponen */}
             <Sidebar />
@@ -18,7 +22,7 @@ export default function OwnerLayout({ title, children }: { title?: string; child
                         {title || "Dashboard"}
                     </h1>
                     <div className="text-sm text-gray-500 font-medium">
-                        Owner Panel
+                        {panelLabel}
                     </div>
                 </header>
 

@@ -65,6 +65,15 @@ class OrderManagementController extends Controller
             }
         }
 
+        // 3. SECURITY BUG FIX: Pencegahan Manipulasi Kasir pada Pembayaran Digital
+        // Jika metode pembayaran BUKAN Tunai, kasir sama sekali tidak boleh mengutak-atik status jika masih menunggu_pembayaran.
+        // Status ini HANYA boleh diubah oleh Webhook Midtrans (PaymentCallbackController).
+        if ($order->payment && $order->payment->metode_pembayaran !== 'Tunai' && $currentStatus === 'menunggu_pembayaran') {
+            return redirect()
+                ->back()
+                ->with('error', 'Aksi ditolak (403)! Pembayaran digital (QRIS/Transfer Bank) sedang diproses oleh sistem Midtrans. Tunggu notifikasi otomatis.');
+        }
+
         $order->update(['status_pesanan' => $newStatus]);
 
         // Jika pesanan selesai dan ada payment, tandai lunas

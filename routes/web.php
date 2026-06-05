@@ -13,14 +13,11 @@ use Illuminate\Support\Facades\Route;
 require __DIR__.'/auth.php';
 
 // ─── Route Owner (Eksklusif) ─────────────────────────────
+// Hanya role 'owner' yang bisa mengakses: Laporan, Ulasan, Manajemen Akun
 Route::middleware(['auth', 'role:owner'])
     ->prefix('owner')
     ->name('owner.')
     ->group(function () {
-
-        // Dashboard
-        Route::get('/dashboard', [DashboardController::class, 'index'])
-            ->name('dashboard');
 
         // Laporan
         Route::get('/laporan', [LaporanController::class, 'index'])
@@ -43,6 +40,9 @@ Route::middleware(['auth', 'role:owner,kasir'])
     ->prefix('kasir')
     ->name('kasir.')
     ->group(function () {
+
+        // Dashboard (bisa diakses Owner & Kasir)
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
         // Manajemen Menu (CRUD + Search)
         Route::get('/menus', [MenuController::class, 'index'])->name('menus.index');
@@ -84,11 +84,11 @@ Route::get('/', function () {
     $role = auth()->user()->role;
 
     if ($role === 'owner') {
-        return redirect()->route('owner.dashboard');
+        return redirect()->route('kasir.dashboard');
     }
 
     if ($role === 'kasir') {
-        return redirect()->route('kasir.pos.index');
+        return redirect()->route('kasir.dashboard');
     }
 
     if ($role === 'pelanggan') {
