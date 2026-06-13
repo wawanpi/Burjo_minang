@@ -21,6 +21,7 @@ use App\Http\Controllers\Pelanggan\CustomerOrderController;
 
 // ─── Import Facade ───────────────────────────────────────────────────────
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 // ─── Route Publik (Breeze Auth) ──────────────────────────────────────────
 require __DIR__.'/auth.php';
@@ -105,10 +106,12 @@ Route::middleware(['auth', 'role:pelanggan'])
 // ║  Redirect otomatis berdasarkan role user yang sedang login              ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 Route::get('/', function () {
+    // Jika belum login, tampilkan Landing Page publik
     if (!auth()->check()) {
-        return redirect()->route('login');
+        return Inertia::render('LandingPage');
     }
 
+    // Jika sudah login, redirect berdasarkan role
     $role = auth()->user()->role;
 
     if ($role === 'owner') {
