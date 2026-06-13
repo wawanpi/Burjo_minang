@@ -313,11 +313,11 @@ export default function PosIndex({ menus, kategoriList }: Props) {
         <OwnerLayout title="Kasir POS">
             <Head title="Kasir POS" />
 
-            <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:h-[calc(100vh-8rem)] w-full lg:overflow-hidden">
+            <div className="flex flex-col lg:flex-row gap-5 lg:gap-6 lg:h-[calc(100vh-7rem)] w-full lg:overflow-hidden">
                 {/* ═══ Bagian Kiri: Daftar Menu ═══ */}
-                <div className="flex-none h-[65vh] lg:h-auto lg:flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden relative">
+                <div className="flex-none h-[65vh] lg:h-auto lg:flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
                     {/* Header & Filter Kategori */}
-                    <div className="p-4 border-b border-gray-100 space-y-3">
+                    <div className="p-4 lg:p-5 border-b border-gray-100 space-y-3">
                         {/* Search Bar */}
                         <div className="relative">
                             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -328,7 +328,7 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                 value={searchMenu}
                                 onChange={(e) => setSearchMenu(e.target.value)}
                                 placeholder="Cari menu..."
-                                className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
+                                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent focus:bg-white transition-all placeholder:text-gray-400"
                             />
                         </div>
                         {/* Kategori Tabs */}
@@ -337,8 +337,8 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                 onClick={() => setSelectedKategori('Semua')}
                                 className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                                     selectedKategori === 'Semua'
-                                        ? 'bg-amber-500 text-white shadow-sm'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                        ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                 }`}
                             >
                                 Semua Menu
@@ -347,10 +347,10 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                 <button
                                     key={kat}
                                     onClick={() => setSelectedKategori(kat)}
-                                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 capitalize ${
                                         selectedKategori === kat
-                                            ? 'bg-amber-500 text-white shadow-sm'
-                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                            ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
+                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                                     }`}
                                 >
                                     {kat}
@@ -360,7 +360,7 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                     </div>
 
                     {/* Grid Menu */}
-                    <div className="flex-1 overflow-y-auto p-4 custom-scrollbar bg-gray-50/50">
+                    <div className="flex-1 overflow-y-auto p-4 lg:p-5 custom-scrollbar bg-gray-50/30">
                         {filteredMenus.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-gray-400">
                                 <span className="text-4xl mb-2">🍽️</span>
@@ -369,7 +369,7 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                 </p>
                             </div>
                         ) : (
-                            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-4">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
                                 {filteredMenus.map(menu => {
                                     const cartItem = cart.find(c => c.menu_id === menu.id);
                                     const qtyInCart = cartItem?.jumlah || 0;
@@ -379,10 +379,10 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                             key={menu.id}
                                             onClick={() => addToCart(menu)}
                                             disabled={menu.stok <= 0}
-                                            className={`group flex flex-col bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-amber-400 relative ${
+                                            className={`group flex flex-col bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:ring-offset-1 relative ${
                                                 menu.stok <= 0
                                                     ? 'opacity-50 cursor-not-allowed border-gray-200'
-                                                    : 'border-gray-100 hover:border-amber-200'
+                                                    : 'border-gray-100 hover:border-amber-300/60'
                                             }`}
                                         >
                                             <div className="w-full h-32 bg-gray-100 relative overflow-hidden">
@@ -390,31 +390,31 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                                     <img
                                                         src={`/storage/${menu.gambar}`}
                                                         alt={menu.nama_menu}
-                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
                                                     />
                                                 ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-3xl opacity-20">
-                                                        🍜
+                                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                                                        <svg className="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
                                                     </div>
                                                 )}
                                                 {/* Badge Stok */}
-                                                <div className={`absolute top-2 right-2 backdrop-blur-sm text-white text-xs font-semibold px-2 py-1 rounded-md ${
-                                                    menu.stok <= 0 ? 'bg-red-500/80' : menu.stok <= 5 ? 'bg-amber-500/80' : 'bg-black/60'
+                                                <div className={`absolute top-2 right-2 backdrop-blur-md text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                                                    menu.stok <= 0 ? 'bg-red-500/90 text-white' : menu.stok <= 5 ? 'bg-amber-100/90 text-amber-700 border border-amber-200/50' : 'bg-white/80 text-gray-600 border border-gray-200/50'
                                                 }`}>
-                                                    {menu.stok <= 0 ? 'Habis' : `Stok: ${menu.stok}`}
+                                                    {menu.stok <= 0 ? 'Habis' : `Stok ${menu.stok}`}
                                                 </div>
                                                 {/* Badge qty in cart */}
                                                 {qtyInCart > 0 && (
-                                                    <div className="absolute top-2 left-2 bg-amber-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center shadow-sm">
+                                                    <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md ring-2 ring-white/80">
                                                         {qtyInCart}
                                                     </div>
                                                 )}
                                             </div>
                                             <div className="p-3">
-                                                <h3 className="font-semibold text-gray-800 line-clamp-1 group-hover:text-amber-600 transition-colors text-sm">
+                                                <h3 className="font-semibold text-gray-800 line-clamp-1 group-hover:text-amber-600 transition-colors text-[13px] leading-snug">
                                                     {menu.nama_menu}
                                                 </h3>
-                                                <p className="text-sm font-bold text-gray-900 mt-1">
+                                                <p className="text-base font-extrabold text-gray-900 mt-1 tracking-tight">
                                                     {formatRupiah(menu.harga)}
                                                 </p>
                                             </div>
@@ -427,11 +427,12 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                 </div>
 
                 {/* ═══ Bagian Kanan: Keranjang ═══ */}
-                <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden shrink-0 z-20">
+                <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden shrink-0 z-20">
                     {/* Header Keranjang */}
-                    <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-                        <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                            🛒 Keranjang
+                    <div className="p-4 border-b border-gray-100 bg-gray-50/30 flex items-center justify-between">
+                        <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                            Keranjang
                             {totalItem > 0 && (
                                 <span className="bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                                     {totalItem}
@@ -471,21 +472,23 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                         {/* Daftar Item */}
                         <div className="flex-1 p-4">
                         {cart.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-gray-400 text-sm">
-                                <span className="text-3xl mb-2 opacity-50">🛍️</span>
-                                <p className="font-medium">Keranjang masih kosong</p>
-                                <p className="text-xs mt-1">Klik menu di sebelah kiri untuk menambah pesanan</p>
+                            <div className="flex flex-col items-center justify-center h-full text-sm py-8">
+                                <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
+                                    <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                                </div>
+                                <p className="font-semibold text-gray-600">Keranjang masih kosong</p>
+                                <p className="text-xs mt-1 text-gray-400">Klik menu di sebelah kiri untuk menambah pesanan</p>
                             </div>
                         ) : (
                             <div className="space-y-3">
                                 {cart.map(item => (
-                                    <div key={item.menu_id} className="flex flex-col gap-2 p-3 bg-gray-50 rounded-lg border border-gray-100 hover:border-gray-200 transition-colors">
+                                    <div key={item.menu_id} className="flex flex-col gap-2 p-3 bg-gray-50/80 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50 transition-all duration-200">
                                         <div className="flex justify-between items-start">
                                             <div>
-                                                <h4 className="font-medium text-gray-800 text-sm leading-tight">
+                                                <h4 className="font-semibold text-gray-800 text-sm leading-tight">
                                                     {item.nama_menu}
                                                 </h4>
-                                                <p className="text-xs text-gray-400 mt-0.5">{formatRupiah(item.harga)} / pcs</p>
+                                                <p className="text-xs text-gray-500 mt-0.5">{formatRupiah(item.harga)} / pcs</p>
                                             </div>
                                             <button
                                                 onClick={() => removeFromCart(item.menu_id)}
@@ -517,7 +520,7 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                                     +
                                                 </button>
                                             </div>
-                                            <span className="font-bold text-gray-900 text-sm">
+                                            <span className="font-extrabold text-gray-900 text-sm tracking-tight">
                                                 {formatRupiah(item.subtotal)}
                                             </span>
                                         </div>
@@ -528,7 +531,7 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                     </div>
 
                         {/* Ringkasan & UI Checkout */}
-                        <div className="p-4 bg-gray-50 border-t border-gray-200 space-y-4 shrink-0 mt-auto">
+                        <div className="p-4 bg-gray-50/50 border-t border-gray-100 space-y-4 shrink-0 mt-auto">
                         {/* Summary */}
                         <div className="space-y-2">
                             <div className="flex justify-between items-center text-sm">
@@ -639,7 +642,7 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                     </div>
 
                     {/* Area Tombol Bottom (Sticky) */}
-                    <div className="p-4 border-t border-gray-200 bg-white mt-auto shrink-0 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                    <div className="p-4 border-t border-gray-100 bg-white mt-auto shrink-0 z-10 shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.06)]">
                         {/* Tombol Final Checkout */}
                         <button
                             onClick={handleCheckout}
@@ -649,8 +652,8 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                 (metodePembayaran === 'Tunai' && !isUangCukup) ||
                                 digitalStatus === 'loading'
                             }
-                            className={`w-full py-3 text-base font-bold rounded-xl shadow-md transition-all duration-200 inline-flex items-center justify-center gap-2 text-white disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg active:scale-[0.98] ${
-                                metodePembayaran === 'Tunai' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'
+                            className={`w-full py-3.5 text-[15px] font-bold rounded-xl shadow-md transition-all duration-200 inline-flex items-center justify-center gap-2 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg active:scale-[0.98] ${
+                                metodePembayaran === 'Tunai' ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-200' : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-200'
                             }`}
                         >
                             {isProcessing ? (
