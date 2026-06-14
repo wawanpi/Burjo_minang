@@ -1,10 +1,12 @@
 // resources/js/Pages/Owner/Laporan/Index.tsx
-import { useState } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { router } from '@inertiajs/react';
 import OwnerLayout from '@/Layouts/OwnerLayout';
 import Badge from '../../../Components/ui/Badge';
-import Button from '../../../Components/ui/Button';
 import Pagination from '../../../Components/ui/Pagination';
+import {
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+} from 'recharts';
 
 declare function route(name: string, params?: any, absolute?: boolean): string;
 
@@ -40,9 +42,9 @@ const formatRupiah = (value: number) =>
 /** Badge variant per tipe pesanan */
 const tipeBadge = (tipe: TipePesanan): { label: string; variant: 'info' | 'warning' | 'success' } => {
   const map: Record<TipePesanan, { label: string; variant: 'info' | 'warning' | 'success' }> = {
-    dine_in   : { label: '🍽️ Dine In',   variant: 'info' },
-    take_away : { label: '🛍️ Take Away', variant: 'warning' },
-    online    : { label: '🌐 Online',     variant: 'success' },
+    dine_in   : { label: 'Dine In',   variant: 'info' },
+    take_away : { label: 'Take Away', variant: 'warning' },
+    online    : { label: 'Online',     variant: 'success' },
   };
   return map[tipe] ?? { label: tipe, variant: 'info' };
 };
@@ -65,18 +67,197 @@ const TIPE_OPTIONS: { value: string; label: string }[] = [
   { value: 'online',    label: 'Online' },
 ];
 
-const TABS: { key: TabType; label: string; icon: string; desc: string }[] = [
-  { key: 'keuangan', label: 'Ringkasan Keuangan', icon: '💰', desc: 'Transaksi lunas & selesai' },
-  { key: 'riwayat',  label: 'Riwayat Transaksi',  icon: '📋', desc: 'Semua transaksi' },
+const TABS: { key: TabType; label: string; desc: string }[] = [
+  { key: 'keuangan', label: 'Ringkasan Keuangan', desc: 'Transaksi lunas & selesai' },
+  { key: 'riwayat',  label: 'Riwayat Transaksi',  desc: 'Semua transaksi' },
 ];
+
+// ─── Inline SVG Icon Components ───────────────────────────────────────────────
+const IconCoin = ({ className = 'w-5 h-5' }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="9" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M14.5 9.5a3 3 0 1 0 0 5M10 9.5v5M12 7.5v1M12 15.5v1" />
+  </svg>
+);
+
+const IconReceipt = ({ className = 'w-5 h-5' }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 21V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16l-3-2-2 2-2-2-2 2-2-2-3 2Z" />
+    <path strokeLinecap="round" d="M14 8H10M14 12H10M12 16H10" />
+  </svg>
+);
+
+const IconChartBar = ({ className = 'w-5 h-5' }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h4v9H3zM10 7h4v14h-4zM17 3h4v18h-4z" />
+  </svg>
+);
+
+const IconCreditCard = ({ className = 'w-5 h-5' }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <rect x="2" y="5" width="20" height="14" rx="2" />
+    <path strokeLinecap="round" d="M2 10h20M6 14h4" />
+  </svg>
+);
+
+const IconPrinter = ({ className = 'w-4 h-4' }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+  </svg>
+);
+
+const IconBanknotes = ({ className = 'w-4 h-4' }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <rect x="2" y="6" width="20" height="12" rx="2" />
+    <circle cx="12" cy="12" r="3" />
+    <path strokeLinecap="round" d="M6 12h.01M18 12h.01" />
+  </svg>
+);
+
+const IconBuilding = ({ className = 'w-4 h-4' }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4M9 9v.01M9 12v.01M9 15v.01M9 18v.01" />
+  </svg>
+);
+
+const IconQrcode = ({ className = 'w-4 h-4' }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <rect x="3" y="3" width="7" height="7" rx="1" />
+    <rect x="14" y="3" width="7" height="7" rx="1" />
+    <rect x="3" y="14" width="7" height="7" rx="1" />
+    <path strokeLinecap="round" d="M14 14h3v3h-3zM20 14v3h-1M14 20h3M20 20h.01" />
+  </svg>
+);
+
+const IconWallet = ({ className = 'w-4 h-4' }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4M20 12v4H6a2 2 0 0 1-2-2v-2M20 12h-4a2 2 0 0 0 0 4h4M4 6v12a2 2 0 0 0 2 2h14" />
+  </svg>
+);
+
+const IconHistory = ({ className = 'w-4 h-4' }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+  </svg>
+);
+
+/** Ikon metode pembayaran */
+const MetodeIcon = ({ metode }: { metode: string }) => {
+  const lower = metode.toLowerCase();
+  if (lower.includes('tunai') || lower.includes('cash'))
+    return <IconBanknotes className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />;
+  if (lower.includes('transfer') || lower.includes('bank'))
+    return <IconBuilding className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />;
+  if (lower.includes('qris') || lower.includes('qr'))
+    return <IconQrcode className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />;
+  return <IconCreditCard className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500" />;
+};
+
+/** Custom badge classes per tipe pesanan (warna khusus) */
+const tipeBadgeClass = (tipe: TipePesanan): string => {
+  const map: Record<TipePesanan, string> = {
+    dine_in   : 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+    take_away : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+    online    : 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+  };
+  return map[tipe] ?? 'bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
+};
+
+// ─── Custom Chart Tooltip ─────────────────────────────────────────────────────
+interface ChartPayload {
+  date: string;
+  label: string;
+  total: number;
+}
+
+const ChartTooltip = ({ active, payload }: {
+  active?: boolean;
+  payload?: Array<{ payload: ChartPayload; value: number }>;
+  label?: string;
+}) => {
+  if (!active || !payload?.length) return null;
+  const data = payload[0].payload;
+  return (
+    <div className="bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg px-3 py-2 shadow-lg border border-gray-700">
+      <p className="text-gray-300 mb-0.5">{data.label}</p>
+      <p className="font-medium text-amber-400">
+        {formatRupiah(data.total)}
+      </p>
+    </div>
+  );
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+// ─── Skeleton Rows (loading state) ────────────────────────────────────────────
+const SkeletonRows = ({ cols, rows = 5 }: { cols: number; rows?: number }) => (
+  <>
+    {Array.from({ length: rows }).map((_, i) => (
+      <tr key={i} className="border-b border-gray-100 dark:border-gray-800">
+        {Array.from({ length: cols }).map((_, j) => (
+          <td key={j} className="px-5 py-4">
+            <div className={`h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse ${
+              j === 0 ? 'w-10' : j === 1 ? 'w-28' : j === 3 ? 'w-24' : 'w-20'
+            }`} />
+          </td>
+        ))}
+      </tr>
+    ))}
+  </>
+);
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function Index({ orders, ringkasan, filters, tab }: Props) {
   const [dari, setDari]     = useState(filters.dari  ?? '');
   const [sampai, setSampai] = useState(filters.sampai ?? '');
   const [tipe, setTipe]     = useState(filters.tipe   ?? '');
+  const [isLoading, setIsLoading] = useState(false);
 
   const isKeuangan = tab === 'keuangan';
+
+  // Track Inertia navigation loading state
+  useEffect(() => {
+    const onStart = () => setIsLoading(true);
+    const onFinish = () => setIsLoading(false);
+    const removeStart = router.on('start', onStart);
+    const removeFinish = router.on('finish', onFinish);
+    return () => { removeStart(); removeFinish(); };
+  }, []);
+
+  // ── Computed stats ──
+  const stats = useMemo(() => {
+    const total = ringkasan.total_pendapatan;
+    const count = orders.meta.total;
+    const avg = count > 0 ? Math.round(total / count) : 0;
+
+    // Hitung metode terbanyak dari data yang tersedia
+    const metodeCounts: Record<string, number> = {};
+    orders.data.forEach((o) => {
+      const m = o.metode_pembayaran || '-';
+      metodeCounts[m] = (metodeCounts[m] || 0) + 1;
+    });
+    const topMetode = Object.entries(metodeCounts).sort((a, b) => b[1] - a[1])[0];
+
+    return { total, count, avg, topMetode: topMetode?.[0] ?? '-' };
+  }, [ringkasan, orders]);
+
+  // ── Chart data: group pendapatan per hari dari orders.data ──
+  const chartData = useMemo(() => {
+    const dayMap: Record<string, number> = {};
+    orders.data.forEach((o) => {
+      const dateKey = o.tanggal_pesan
+        ? new Date(o.tanggal_pesan).toISOString().slice(0, 10)
+        : 'unknown';
+      dayMap[dateKey] = (dayMap[dateKey] || 0) + o.total_harga;
+    });
+
+    return Object.entries(dayMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, total]) => ({
+        date,
+        label: new Date(date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }),
+        total,
+      }));
+  }, [orders.data]);
 
   // Navigasi Tab
   const switchTab = (newTab: TabType) => {
@@ -124,20 +305,43 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
     ? ['#', 'Pelanggan', 'Tanggal', 'Total', 'Metode', 'Tipe Pesanan']
     : ['#', 'Pelanggan', 'Tanggal', 'Total', 'Metode', 'Tipe Pesanan', 'Status'];
 
+  // Tanggal hari ini
+  const todayStr = new Date().toLocaleDateString('id-ID', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  });
+
   return (
     <OwnerLayout title="Laporan">
       <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-            Laporan
-          </h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            Audit keuangan dan riwayat operasional restoran
-          </p>
+
+        {/* ═══════════════════════════════════════════════════
+            1. HEADER SECTION
+        ═══════════════════════════════════════════════════ */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100">
+              Laporan
+            </h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+              Audit keuangan dan riwayat operasional restoran · {todayStr}
+            </p>
+          </div>
+          {isKeuangan && (
+            <button
+              onClick={handlePrint}
+              className="inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium
+                         bg-amber-500 hover:bg-amber-600 text-white
+                         transition-colors duration-150 active:scale-[0.97] self-start"
+            >
+              <IconPrinter />
+              Cetak Laporan
+            </button>
+          )}
         </div>
 
-        {/* ═══ Dual-Tab Navigation ═══ */}
+        {/* ═══════════════════════════════════════════════════
+            DUAL-TAB NAVIGATION
+        ═══════════════════════════════════════════════════ */}
         <div className="flex border-b border-gray-200 dark:border-gray-700">
           {TABS.map((t) => (
             <button
@@ -149,7 +353,10 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
                   : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              <span className="text-base">{t.icon}</span>
+              {t.key === 'keuangan'
+                ? <IconWallet className="w-4 h-4" />
+                : <IconHistory className="w-4 h-4" />
+              }
               <span>{t.label}</span>
               {/* Garis bawah aktif */}
               {tab === t.key && (
@@ -159,52 +366,180 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
           ))}
         </div>
 
-        {/* Filter Panel */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">Filter Laporan</p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Dari */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                Dari Tanggal
-              </label>
-              <input
-                type="date"
-                value={dari}
-                onChange={(e) => setDari(e.target.value)}
-                className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600
-                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                           focus:outline-none focus:ring-2 focus:ring-amber-400"
-              />
+        {/* ═══════════════════════════════════════════════════
+            2. STATS CARDS ROW (tab Keuangan)
+        ═══════════════════════════════════════════════════ */}
+        {isKeuangan && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Total Pendapatan */}
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Pendapatan</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">
+                    {formatRupiah(stats.total)}
+                  </p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Periode terpilih</p>
+                </div>
+                <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400 flex-shrink-0">
+                  <IconCoin className="w-[18px] h-[18px]" />
+                </div>
+              </div>
             </div>
 
-            {/* Sampai */}
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                Sampai Tanggal
-              </label>
-              <input
-                type="date"
-                value={sampai}
-                min={dari}
-                onChange={(e) => setSampai(e.target.value)}
-                className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600
-                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                           focus:outline-none focus:ring-2 focus:ring-amber-400"
-              />
+            {/* Jumlah Transaksi */}
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Jumlah Transaksi</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">
+                    {stats.count.toLocaleString('id-ID')}
+                  </p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Lunas & selesai</p>
+                </div>
+                <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0">
+                  <IconReceipt className="w-[18px] h-[18px]" />
+                </div>
+              </div>
+            </div>
+
+            {/* Rata-rata / Transaksi */}
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Rata-rata / Transaksi</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">
+                    {formatRupiah(stats.avg)}
+                  </p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Per order</p>
+                </div>
+                <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0">
+                  <IconChartBar className="w-[18px] h-[18px]" />
+                </div>
+              </div>
+            </div>
+
+            {/* Metode Terbanyak */}
+            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Metode Terbanyak</p>
+                  <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1 capitalize">
+                    {stats.topMetode}
+                  </p>
+                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Dari data halaman ini</p>
+                </div>
+                <div className="w-9 h-9 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-600 dark:text-orange-400 flex-shrink-0">
+                  <IconCreditCard className="w-[18px] h-[18px]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════
+            CHART: Pendapatan Harian (tab Keuangan, jika ada data)
+        ═══════════════════════════════════════════════════ */}
+        {isKeuangan && chartData.length > 0 && (
+          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                <IconChartBar className="w-4 h-4 text-gray-400" />
+                Pendapatan Harian
+              </h3>
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                {chartData.length} hari
+              </span>
+            </div>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-gray-100 dark:text-gray-800" />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                  axisLine={false}
+                  tickLine={false}
+                  tickFormatter={(v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}jt` : v >= 1_000 ? `${(v / 1_000).toFixed(0)}rb` : String(v)}
+                />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(245,158,11,0.06)' }} />
+                <Bar
+                  dataKey="total"
+                  fill="#F59E0B"
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={40}
+                />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {/* Info banner untuk tab Riwayat */}
+        {!isKeuangan && (
+          <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl px-5 py-4 border border-blue-100 dark:border-blue-800">
+            <div className="w-9 h-9 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0">
+              <IconHistory className="w-[18px] h-[18px]" />
+            </div>
+            <div>
+              <p className="text-xs text-blue-700 dark:text-blue-400 font-medium">
+                Riwayat Semua Transaksi — termasuk yang batal & dalam proses
+              </p>
+              <p className="text-sm font-medium text-blue-800 dark:text-blue-300">
+                {orders.meta.total} transaksi ditemukan
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════
+            3. FILTER BAR — Compact Inline
+        ═══════════════════════════════════════════════════ */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 px-4 py-3">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+            {/* Date Range */}
+            <div className="flex items-end gap-2 flex-1 min-w-0">
+              <div className="flex flex-col gap-1 flex-1 min-w-0">
+                <label className="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Dari</label>
+                <input
+                  type="date"
+                  value={dari}
+                  onChange={(e) => setDari(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700
+                             bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400
+                             transition-colors duration-150"
+                />
+              </div>
+              <span className="text-gray-300 dark:text-gray-600 text-sm pb-2.5">—</span>
+              <div className="flex flex-col gap-1 flex-1 min-w-0">
+                <label className="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Sampai</label>
+                <input
+                  type="date"
+                  value={sampai}
+                  min={dari}
+                  onChange={(e) => setSampai(e.target.value)}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700
+                             bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                             focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400
+                             transition-colors duration-150"
+                />
+              </div>
             </div>
 
             {/* Tipe Pesanan */}
             <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">
-                Tipe Pesanan
-              </label>
+              <label className="text-[11px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wider">Tipe</label>
               <select
                 value={tipe}
                 onChange={(e) => setTipe(e.target.value)}
-                className="px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-600
-                           bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                           focus:outline-none focus:ring-2 focus:ring-amber-400"
+                className="px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700
+                           bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+                           focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400
+                           transition-colors duration-150 min-w-[140px]"
               >
                 {TIPE_OPTIONS.map((opt) => (
                   <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -214,115 +549,121 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
 
             {/* Actions */}
             <div className="flex items-end gap-2">
-              <Button className="flex-1" onClick={applyFilter}>Terapkan</Button>
-              <Button variant="outline" onClick={resetFilter}>Reset</Button>
+              <button
+                onClick={applyFilter}
+                className="px-5 py-2 rounded-lg text-sm font-medium bg-amber-500 hover:bg-amber-600 text-white
+                           transition-colors duration-150 active:scale-[0.97]"
+              >
+                Terapkan
+              </button>
+              <button
+                onClick={resetFilter}
+                className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600
+                           text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800
+                           transition-colors duration-150"
+              >
+                Reset
+              </button>
             </div>
           </div>
         </div>
 
-        {/* ═══ Ringkasan Pendapatan (hanya tab Keuangan) ═══ */}
-        {isKeuangan && (
-          <div className="flex items-center gap-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl px-5 py-4 border border-amber-200 dark:border-amber-800">
-            <span className="text-xl">💰</span>
-            <div>
-              <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
-                Total Pendapatan — transaksi lunas & selesai
-              </p>
-              <p className="text-lg font-bold text-amber-800 dark:text-amber-300">
-                {formatRupiah(ringkasan.total_pendapatan)}
-              </p>
-            </div>
-            <div className="ml-auto flex items-center gap-3">
-              <span className="text-sm text-amber-600 dark:text-amber-400 font-medium">
-                {orders.meta.total} transaksi
-              </span>
-              {/* Tombol Cetak Laporan */}
-              <button
-                onClick={handlePrint}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                           border-2 border-amber-500 text-amber-700 bg-white
-                           hover:bg-amber-500 hover:text-white
-                           dark:bg-transparent dark:text-amber-400 dark:border-amber-500
-                           dark:hover:bg-amber-500 dark:hover:text-white
-                           transition-all duration-200 shadow-sm hover:shadow-md active:scale-[0.97]"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                </svg>
-                Cetak Laporan
-              </button>
-            </div>
+        {/* ═══════════════════════════════════════════════════
+            4. TABEL TRANSAKSI — Modernized
+        ═══════════════════════════════════════════════════ */}
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 overflow-hidden">
+          {/* Table Header Label */}
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100 dark:border-gray-800">
+            <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.75} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Daftar Transaksi
+            </h3>
+            <span className="text-xs text-gray-400 dark:text-gray-500">
+              {orders.meta.total} transaksi
+            </span>
           </div>
-        )}
 
-        {/* Info banner untuk tab Riwayat */}
-        {!isKeuangan && (
-          <div className="flex items-center gap-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl px-5 py-4 border border-blue-200 dark:border-blue-800">
-            <span className="text-xl">📋</span>
-            <div>
-              <p className="text-xs text-blue-700 dark:text-blue-400 font-medium">
-                Riwayat Semua Transaksi — termasuk yang batal & dalam proses
-              </p>
-              <p className="text-sm font-semibold text-blue-800 dark:text-blue-300">
-                {orders.meta.total} transaksi ditemukan
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* ═══ Tabel ═══ */}
-        <div className="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+                <tr className="bg-gray-50 dark:bg-gray-800/50">
                   {tableHeaders.map((h) => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide whitespace-nowrap">
+                    <th key={h} className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
                       {h}
                     </th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
-                {orders.data.length === 0 ? (
+              <tbody>
+                {/* Loading skeleton */}
+                {isLoading ? (
+                  <SkeletonRows cols={tableHeaders.length} rows={5} />
+                ) : orders.data.length === 0 ? (
+                  /* Empty state */
                   <tr>
-                    <td colSpan={tableHeaders.length} className="px-4 py-16 text-center text-gray-400">
-                      Tidak ada data untuk filter ini.
+                    <td colSpan={tableHeaders.length} className="px-5 py-20 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                          <IconReceipt className="w-7 h-7 text-gray-300 dark:text-gray-600" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                            Belum ada transaksi
+                          </p>
+                          <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                            Coba ubah filter tanggal atau tipe pesanan
+                          </p>
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 ) : (
+                  /* Data rows */
                   orders.data.map((order) => {
                     const tBadge = tipeBadge(order.tipe_pesanan);
                     const sBadge = statusBadge(order.status_pesanan);
                     return (
-                      <tr key={order.id} className="hover:bg-gray-50 dark:hover:bg-gray-900/50 transition-colors">
-                        <td className="px-4 py-3 text-gray-400 dark:text-gray-500">
+                      <tr
+                        key={order.id}
+                        className="border-b border-gray-100 dark:border-gray-800 last:border-b-0
+                                   hover:bg-amber-50/50 dark:hover:bg-amber-900/5 transition-colors duration-150"
+                      >
+                        {/* # */}
+                        <td className="px-5 py-3.5 text-xs text-gray-400 dark:text-gray-500 font-medium">
                           #{order.id}
                         </td>
-                        <td className="px-4 py-3 font-medium text-gray-900 dark:text-gray-100">
+                        {/* Pelanggan */}
+                        <td className="px-5 py-3.5 font-medium text-gray-900 dark:text-gray-100">
                           {order.user?.name ?? '—'}
                         </td>
-                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                        {/* Tanggal */}
+                        <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">
                           {new Date(order.tanggal_pesan).toLocaleDateString('id-ID', {
                             day: '2-digit', month: 'short', year: 'numeric',
                           })}
                         </td>
-                        <td className="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                        {/* Total */}
+                        <td className="px-5 py-3.5 font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap text-right tabular-nums">
                           {formatRupiah(order.total_harga)}
                         </td>
-                        <td className="px-4 py-3 text-gray-500 dark:text-gray-400">
-                          {order.metode_pembayaran}
+                        {/* Metode */}
+                        <td className="px-5 py-3.5">
+                          <span className="inline-flex items-center gap-1.5 text-gray-600 dark:text-gray-400 text-xs">
+                            <MetodeIcon metode={order.metode_pembayaran} />
+                            {order.metode_pembayaran}
+                          </span>
                         </td>
-                        <td className="px-4 py-3">
-                          <Badge
-                            label={tBadge.label}
-                            variant={tBadge.variant}
-                          />
+                        {/* Tipe Pesanan — custom colored badge */}
+                        <td className="px-5 py-3.5">
+                          <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-0.5 rounded-full font-medium ${tipeBadgeClass(order.tipe_pesanan)}`}>
+                            {tBadge.label}
+                          </span>
                         </td>
                         {/* Kolom Status — hanya muncul di tab Riwayat */}
                         {!isKeuangan && (
-                          <td className="px-4 py-3">
+                          <td className="px-5 py-3.5">
                             <Badge
                               label={sBadge.label}
                               variant={sBadge.variant}
@@ -338,7 +679,7 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
           </div>
 
           {/* Pagination */}
-          <div className="px-4 pb-4 pt-2 border-t border-gray-100 dark:border-gray-800">
+          <div className="px-5 pb-4 pt-2 border-t border-gray-100 dark:border-gray-800">
             <Pagination
               currentPage={orders.meta.current_page}
               lastPage={orders.meta.last_page}

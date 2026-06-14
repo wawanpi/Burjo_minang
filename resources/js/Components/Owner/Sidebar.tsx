@@ -91,7 +91,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
     });
 
     return (
-        <aside className={`w-64 bg-gray-900 flex flex-col min-h-screen fixed left-0 top-0 bottom-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`w-64 bg-gray-900 border-t-4 border-amber-500 flex flex-col min-h-screen fixed left-0 top-0 bottom-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
 
             {/* Header Sidebar */}
             <div className="flex items-center justify-between px-5 py-5 border-b border-gray-800">
@@ -117,8 +117,8 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
             </div>
 
             {/* Section Label */}
-            <div className="px-5 pt-5 pb-2">
-                <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest">Menu Utama</span>
+            <div className="px-3 pt-5 pb-2">
+                <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest px-3 mb-2 block">Menu Utama</span>
             </div>
 
             {/* Navigasi (Menu) */}
@@ -130,14 +130,14 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
                             key={item.label}
                             href={item.href}
                             onClick={() => setIsOpen && setIsOpen(false)}
-                            className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 text-[13px] font-medium ${
+                            className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 text-[13px] ${
                                 active
-                                    ? "bg-amber-500/10 text-amber-400"
-                                    : "text-gray-400 hover:bg-gray-800/70 hover:text-gray-200"
+                                    ? "bg-amber-500/10 text-amber-400 font-medium"
+                                    : "text-gray-400 hover:bg-white/5 hover:text-white font-normal"
                             }`}
                         >
-                            <span className={`flex-shrink-0 transition-colors duration-200 ${
-                                active ? 'text-amber-400' : 'text-gray-600 group-hover:text-gray-400'
+                            <span className={`flex-shrink-0 transition-colors duration-150 ${
+                                active ? 'text-amber-400' : 'text-gray-500 group-hover:text-gray-300'
                             }`}>
                                 {item.icon}
                             </span>
@@ -151,15 +151,15 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
             </nav>
 
             {/* Footer Sidebar (User Info + Logout) */}
-            <div className="p-3 border-t border-gray-800">
+            <div className="p-3 border-t border-white/10 pt-4">
                 {/* User Mini Info */}
                 <div className="flex items-center gap-3 px-3 py-2.5 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-300 uppercase">
+                    <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-sm font-semibold text-amber-400 uppercase">
                         {userName.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-200 truncate">{userName}</p>
-                        <p className="text-[10px] text-gray-500 capitalize">{userRole}</p>
+                        <p className="text-sm font-medium text-white truncate">{userName}</p>
+                        <p className="text-xs text-gray-500 capitalize">{userRole}</p>
                     </div>
                 </div>
 
