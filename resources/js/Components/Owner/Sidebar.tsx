@@ -91,12 +91,12 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
     });
 
     return (
-        <aside className={`w-64 bg-gray-900 border-t-4 border-amber-500 flex flex-col min-h-screen fixed left-0 top-0 bottom-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`w-64 bg-gray-950 border-t-4 border-[#990000] flex flex-col min-h-screen fixed left-0 top-0 bottom-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 shadow-2xl shadow-black/50 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
 
             {/* Header Sidebar */}
-            <div className="flex items-center justify-between px-5 py-5 border-b border-gray-800">
+            <div className="flex items-center justify-between px-5 py-6 border-b border-white/5">
                 <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-950/80 border border-amber-500/40 flex items-center justify-center overflow-hidden shadow-lg shadow-amber-900/10">
+                    <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shadow-lg shadow-black/20">
                         <img
                             src="/images/logo-burjo.jpg"
                             alt="Burjo Minang Logo"
@@ -104,25 +104,25 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
                         />
                     </div>
                     <div>
-                        <span className="text-base font-bold text-white tracking-wide">Burjo Minang</span>
-                        <span className="block text-[10px] font-medium text-gray-500 uppercase tracking-widest">
+                        <span className="text-base font-serif font-bold text-white tracking-wide drop-shadow-sm">Burjo Minang</span>
+                        <span className="block text-[10px] font-medium text-yellow-400 uppercase tracking-[0.2em] mt-0.5">
                             {userRole === 'owner' ? 'Owner Panel' : 'Kasir Panel'}
                         </span>
                     </div>
                 </div>
                 {/* Tombol Tutup Khusus Mobile */}
-                <button onClick={() => setIsOpen && setIsOpen(false)} className="lg:hidden p-1.5 rounded-lg hover:bg-gray-800 text-gray-500 hover:text-gray-300 transition-colors">
+                <button onClick={() => setIsOpen && setIsOpen(false)} className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors">
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
             </div>
 
             {/* Section Label */}
-            <div className="px-3 pt-5 pb-2">
-                <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-widest px-3 mb-2 block">Menu Utama</span>
+            <div className="px-4 pt-6 pb-2">
+                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-2">Menu Utama</span>
             </div>
 
             {/* Navigasi (Menu) */}
-            <nav className="flex-1 px-3 pb-4 space-y-0.5 overflow-y-auto custom-scrollbar">
+            <nav className="flex-1 px-3 pb-4 space-y-1 overflow-y-auto custom-scrollbar">
                 {visibleItems.map((item) => {
                     const active = isActive(item.href);
                     return (
@@ -130,20 +130,20 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
                             key={item.label}
                             href={item.href}
                             onClick={() => setIsOpen && setIsOpen(false)}
-                            className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-150 text-[13px] ${
+                            className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300 text-[13px] ${
                                 active
-                                    ? "bg-amber-500/10 text-amber-400 font-medium"
-                                    : "text-gray-400 hover:bg-white/5 hover:text-white font-normal"
+                                    ? "bg-[#990000] text-white font-medium shadow-md shadow-[#990000]/20"
+                                    : "text-gray-400 hover:bg-white/10 hover:text-white font-normal"
                             }`}
                         >
-                            <span className={`flex-shrink-0 transition-colors duration-150 ${
-                                active ? 'text-amber-400' : 'text-gray-500 group-hover:text-gray-300'
+                            <span className={`flex-shrink-0 transition-colors duration-300 ${
+                                active ? 'text-yellow-400' : 'text-gray-500 group-hover:text-gray-300'
                             }`}>
                                 {item.icon}
                             </span>
                             {item.label}
                             {active && (
-                                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
                             )}
                         </Link>
                     );
@@ -151,14 +151,14 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
             </nav>
 
             {/* Footer Sidebar (User Info + Logout) */}
-            <div className="p-3 border-t border-white/10 pt-4">
+            <div className="p-3 border-t border-white/5 pt-4 bg-black/20">
                 {/* User Mini Info */}
                 <div className="flex items-center gap-3 px-3 py-2.5 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-sm font-semibold text-amber-400 uppercase">
+                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm font-semibold text-white uppercase border border-white/5">
                         {userName.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{userName}</p>
+                        <p className="text-sm font-bold text-white truncate">{userName}</p>
                         <p className="text-xs text-gray-500 capitalize">{userRole}</p>
                     </div>
                 </div>
@@ -167,7 +167,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
                     href="/logout"
                     method="post"
                     as="button"
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-red-400 hover:bg-red-500/10 hover:text-red-300 transition-all duration-200 text-sm font-medium"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-red-400 hover:bg-[#990000]/20 hover:text-red-300 transition-all duration-300 text-sm font-semibold border border-transparent hover:border-red-500/20"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

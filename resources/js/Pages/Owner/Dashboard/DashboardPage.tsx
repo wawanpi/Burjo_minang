@@ -79,32 +79,32 @@ export default function DashboardPage({ stats, chart_data }: Props) {
       value: formatRupiah(stats.total_pendapatan),
       sub: 'Semua waktu (lunas)',
       icon: <IconPendapatan />,
-      accent: 'bg-emerald-50 text-emerald-600',
-      badgeColor: 'bg-emerald-50 text-emerald-600',
+      accent: 'bg-[#990000]/10 text-[#990000]',
+      badgeColor: 'bg-[#fff0f0] text-[#990000]',
     },
     {
       label: 'Pendapatan Bulan Ini',
       value: formatRupiah(stats.pendapatan_bulan),
       sub: new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
       icon: <IconBulan />,
-      accent: 'bg-blue-50 text-blue-600',
-      badgeColor: 'bg-blue-50 text-blue-600',
+      accent: 'bg-yellow-400/20 text-yellow-600',
+      badgeColor: 'bg-yellow-50 text-yellow-600',
     },
     {
       label: 'Total Pesanan',
       value: stats.jumlah_pesanan.toLocaleString('id-ID'),
       sub: 'Semua status',
       icon: <IconPesanan />,
-      accent: 'bg-amber-50 text-amber-600',
-      badgeColor: 'bg-amber-50 text-amber-600',
+      accent: 'bg-gray-100 text-gray-600',
+      badgeColor: 'bg-gray-100 text-gray-600',
     },
     {
       label: 'Pesanan Hari Ini',
       value: stats.pesanan_hari_ini.toLocaleString('id-ID'),
       sub: new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }),
       icon: <IconHariIni />,
-      accent: 'bg-violet-50 text-violet-600',
-      badgeColor: 'bg-violet-50 text-violet-600',
+      accent: 'bg-[#990000]/10 text-[#990000]',
+      badgeColor: 'bg-[#fff0f0] text-[#990000]',
     },
   ];
 
@@ -113,43 +113,46 @@ export default function DashboardPage({ stats, chart_data }: Props) {
       <div className="space-y-8">
         {/* ── Page Header ────────────────────────────────── */}
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
-            Dashboard
-          </h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Selamat datang! Berikut ringkasan bisnis hari ini.
+          <h2 className="text-2xl sm:text-3xl font-serif font-bold text-gray-900 tracking-tight leading-snug">
+            Selamat datang kembali.
+          </h2>
+          <p className="text-sm sm:text-base text-gray-500 mt-1.5 font-medium">
+            Berikut performa bisnis hari ini.
           </p>
         </div>
 
         {/* ── Stat Cards Grid ────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
           {cards.map((card) => (
             <div
               key={card.label}
-              className="group bg-white rounded-2xl border border-gray-100 p-5 shadow-sm hover:shadow-md hover:border-gray-200 transition-all duration-300 cursor-default"
+              className="group bg-gradient-to-br from-white to-gray-50/80 rounded-3xl p-6 shadow-xl shadow-gray-200/50 hover:shadow-2xl hover:shadow-[#990000]/10 hover:-translate-y-1 transition-all duration-500 cursor-default border border-white/60 relative overflow-hidden"
             >
+              {/* Optional background glow */}
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-white/40 to-transparent rounded-full blur-2xl opacity-50 pointer-events-none" />
+
               {/* Card Top: Icon + Badge */}
-              <div className="flex items-center justify-between mb-4">
-                <div className={`w-10 h-10 rounded-xl ${card.accent} flex items-center justify-center transition-transform duration-300 group-hover:scale-110`}>
+              <div className="flex items-center justify-between mb-5 relative z-10">
+                <div className={`w-12 h-12 rounded-2xl ${card.accent} flex items-center justify-center transition-transform duration-500 group-hover:scale-110 shadow-sm`}>
                   {card.icon}
                 </div>
-                <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${card.badgeColor}`}>
+                <span className={`text-[10px] font-bold px-3 py-1.5 rounded-full ${card.badgeColor} tracking-widest uppercase shadow-sm`}>
                   Live
                 </span>
               </div>
 
               {/* Value */}
-              <p className="text-2xl font-extrabold text-gray-900 leading-tight tracking-tight">
+              <p className="text-3xl font-extrabold text-gray-900 leading-tight tracking-tight relative z-10">
                 {card.value}
               </p>
 
               {/* Label */}
-              <p className="text-sm font-semibold text-gray-600 mt-1.5">
+              <p className="text-sm font-bold text-gray-600 mt-2 relative z-10">
                 {card.label}
               </p>
 
               {/* Sub Label */}
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-gray-400 mt-1 relative z-10 font-medium">
                 {card.sub}
               </p>
             </div>
@@ -157,58 +160,58 @@ export default function DashboardPage({ stats, chart_data }: Props) {
         </div>
 
         {/* ── Revenue Trend Chart ────────────────────────── */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+        <div className="bg-gradient-to-br from-white to-gray-50/80 rounded-3xl shadow-xl shadow-gray-200/50 overflow-hidden hover:shadow-2xl hover:shadow-[#990000]/10 transition-all duration-500 border border-white/60">
           {/* Chart Header */}
-          <div className="flex items-center justify-between px-6 pt-6 pb-2">
+          <div className="flex items-center justify-between px-8 pt-8 pb-4">
             <div>
-              <h2 className="text-base font-bold text-gray-900">
+              <h2 className="text-xl font-serif font-bold text-gray-900">
                 Tren Pendapatan
               </h2>
-              <p className="text-xs text-gray-400 mt-0.5">
+              <p className="text-xs text-gray-400 mt-1 tracking-wider uppercase font-medium">
                 30 hari terakhir
               </p>
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-400">
-              <span className="inline-block w-2.5 h-2.5 rounded-full bg-amber-400" />
+            <div className="flex items-center gap-2.5 text-xs font-bold text-gray-500 uppercase tracking-widest px-4 py-2 bg-gray-50 rounded-full border border-gray-100 shadow-inner">
+              <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#990000] shadow-[0_0_8px_rgba(153,0,0,0.4)] animate-pulse" />
               Pendapatan
             </div>
           </div>
 
           {/* Chart Area */}
-          <div className="px-2 pb-4 pt-2">
-            <ResponsiveContainer width="100%" height={260}>
+          <div className="px-4 pb-6 pt-2">
+            <ResponsiveContainer width="100%" height={280}>
               <AreaChart data={chart_data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="pendapatanGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%"  stopColor="#f59e0b" stopOpacity={0.2} />
-                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.01} />
+                    <stop offset="0%"  stopColor="#990000" stopOpacity={0.25} />
+                    <stop offset="100%" stopColor="#990000" stopOpacity={0.01} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                 <XAxis
                   dataKey="tanggal"
-                  tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }}
+                  tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }}
                   tickLine={false}
                   axisLine={false}
                   interval="preserveStartEnd"
                   dy={8}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 500 }}
+                  tick={{ fontSize: 11, fill: '#9ca3af', fontWeight: 600 }}
                   tickLine={false}
                   axisLine={false}
                   tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`}
                   dx={-4}
                 />
-                <Tooltip content={<CustomTooltip />} />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#fca5a5', strokeWidth: 1, strokeDasharray: '4 4' }} />
                 <Area
                   type="monotone"
                   dataKey="pendapatan"
-                  stroke="#f59e0b"
-                  strokeWidth={2.5}
+                  stroke="#990000"
+                  strokeWidth={3}
                   fill="url(#pendapatanGradient)"
                   dot={false}
-                  activeDot={{ r: 5, fill: '#f59e0b', stroke: '#fff', strokeWidth: 2 }}
+                  activeDot={{ r: 6, fill: '#990000', stroke: '#fff', strokeWidth: 2 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
