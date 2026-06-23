@@ -9,6 +9,7 @@ interface Props {
 export default function CustomerLayout({ children, title }: Props) {
   const { auth } = usePage().props as any;
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const currentRoute = (name: string) => (route() as any).current(name);
 
@@ -23,34 +24,60 @@ export default function CustomerLayout({ children, title }: Props) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Handle scroll effect for transparent navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
+    <div className="min-h-screen bg-gray-50 pb-20 sm:pb-0 font-sans">
       {/* Top Navbar (Disembunyikan di Mobile, diganti Bottom Nav) */}
-      <nav className="hidden sm:flex sticky top-0 z-40 bg-white/80 backdrop-blur-xl border-b border-gray-200/80 shadow-sm">
-        <div className="max-w-7xl mx-auto w-full px-6 lg:px-8 h-16 flex items-center justify-between">
+      <nav className={`hidden sm:flex fixed w-full top-0 z-50 transition-all duration-500 border-b ${
+        scrolled 
+          ? 'bg-gray-950/90 backdrop-blur-2xl shadow-2xl shadow-black/20 border-white/5 py-0' 
+          : 'bg-transparent border-transparent py-2'
+      }`}>
+        <div className="max-w-7xl mx-auto w-full px-6 lg:px-8 h-20 flex items-center justify-between">
+          
+          {/* Logo — Premium Typographic Identik Landing Page */}
           <Link href={route('customer.menu')} className="flex items-center gap-3 group">
-            <span className="font-sans text-xl font-extrabold text-[#990000] tracking-widest leading-none">BURJO MINANG</span>
+            <div className="flex flex-col items-start">
+              <span className="font-serif text-xl sm:text-2xl font-bold text-white tracking-wide leading-none">
+                BURJO MINANG
+              </span>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="block h-px w-5 bg-yellow-400/60" />
+                <span className="text-[9px] sm:text-[10px] tracking-[0.3em] uppercase text-yellow-400 font-medium leading-none">
+                  Cita Rasa Autentik
+                </span>
+                <span className="block h-px w-5 bg-yellow-400/60" />
+              </div>
+            </div>
           </Link>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             {/* Desktop Navigation */}
-            <div className="hidden sm:flex items-center gap-1">
+            <div className="hidden sm:flex items-center gap-2">
               <Link 
                 href={route('customer.menu')} 
-                className={`px-4 py-2 rounded-full text-sm font-bold tracking-wide transition-all duration-300 ${
+                className={`px-4 py-2 rounded-full text-sm font-semibold tracking-wide transition-all duration-300 ${
                   currentRoute('customer.menu') 
-                    ? 'bg-[#c70024] text-white shadow-md shadow-red-500/20' 
-                    : 'text-gray-600 hover:text-[#c70024] hover:bg-red-50'
+                    ? 'bg-[#990000] text-white shadow-lg shadow-[#990000]/30' 
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
                 }`}
               >
                 Menu
               </Link>
               <Link 
                 href={route('customer.orders')} 
-                className={`px-4 py-2 rounded-full text-sm font-bold tracking-wide transition-all duration-300 ${
+                className={`px-4 py-2 rounded-full text-sm font-semibold tracking-wide transition-all duration-300 ${
                   currentRoute('customer.orders') 
-                    ? 'bg-[#c70024] text-white shadow-md shadow-red-500/20' 
-                    : 'text-gray-600 hover:text-[#c70024] hover:bg-red-50'
+                    ? 'bg-[#990000] text-white shadow-lg shadow-[#990000]/30' 
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
                 }`}
               >
                 Pesanan Saya
@@ -61,16 +88,16 @@ export default function CustomerLayout({ children, title }: Props) {
             <div className="relative" ref={dropdownRef}>
               <button 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 hover:bg-red-50 transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#c70024]/30"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-[#990000]/50"
               >
-                <span className="text-sm font-bold text-gray-700">{auth.user.name}</span>
-                <svg className={`w-4 h-4 text-gray-500 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+                <span className="text-sm font-semibold text-white tracking-wide">{auth.user.name}</span>
+                <svg className={`w-4 h-4 text-white/70 transition-transform duration-300 ${isDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
               </button>
               
               {isDropdownOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 py-1 z-50 animate-toast-in">
-                  <Link href="#" className="block px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-red-50 hover:text-[#c70024] transition-colors rounded-xl mx-1">Profil</Link>
-                  <Link href={route('logout')} method="post" as="button" className="block w-full text-left px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-50 transition-colors rounded-xl mx-1">Logout</Link>
+                <div className="absolute right-0 top-full mt-2 w-48 bg-gray-950/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/10 py-1.5 z-50 animate-toast-in">
+                  <Link href="#" className="block px-4 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors rounded-xl mx-1.5">Profil</Link>
+                  <Link href={route('logout')} method="post" as="button" className="block w-full text-left px-4 py-2.5 text-sm font-medium text-[#ff4444] hover:bg-[#990000]/20 transition-colors rounded-xl mx-1.5">Logout</Link>
                 </div>
               )}
             </div>

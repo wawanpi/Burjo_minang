@@ -16,10 +16,13 @@ use App\Http\Controllers\Kasir\MenuController;
 use App\Http\Controllers\Kasir\OrderManagementController;
 use App\Http\Controllers\Kasir\PosController;
 
-// ─── Import Controller: Pelanggan ────────────────────────────────────────
+// ─── Import Controller: Pelanggan ────────────────────────────────────────────
 use App\Http\Controllers\Pelanggan\CustomerOrderController;
 
-// ─── Import Facade ───────────────────────────────────────────────────────
+// ─── Import Model ────────────────────────────────────────────────────────────
+use App\Models\Menu;
+
+// ─── Import Facade ───────────────────────────────────────────────────────────
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -108,7 +111,18 @@ Route::middleware(['auth', 'role:pelanggan'])
 Route::get('/', function () {
     // Jika belum login, tampilkan Landing Page publik
     if (!auth()->check()) {
-        return Inertia::render('LandingPage');
+        // Ambil 6 menu unggulan dengan rating tertinggi untuk ditampilkan di Landing Page
+        $featuredMenus = Menu::withAvg('reviews', 'rating')
+            ->withCount('reviews')
+            ->where('stok', '>', 0)
+            ->orderByDesc('reviews_avg_rating')
+            ->orderByDesc('reviews_count')
+            ->limit(6)
+            ->get();
+
+        return Inertia::render('LandingPage', [
+            'featuredMenus' => $featuredMenus,
+        ]);
     }
 
     // Jika sudah login, redirect berdasarkan role
