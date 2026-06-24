@@ -315,12 +315,12 @@ export default function PosIndex({ menus, kategoriList }: Props) {
 
             <div className="flex flex-col lg:flex-row gap-5 lg:gap-6 lg:h-[calc(100vh-7rem)] w-full lg:overflow-hidden">
                 {/* ═══ Bagian Kiri: Daftar Menu ═══ */}
-                <div className="flex-none h-[65vh] lg:h-auto lg:flex-1 flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative">
+                <div className="flex-none h-[65vh] lg:h-auto lg:flex-1 flex flex-col bg-white rounded-2xl shadow-soft border border-black/[0.05] overflow-hidden relative">
                     {/* Header & Filter Kategori */}
-                    <div className="p-4 lg:p-5 border-b border-gray-100 space-y-3">
+                    <div className="p-4 lg:p-5 border-b border-black/[0.05] space-y-3">
                         {/* Search Bar */}
                         <div className="relative">
-                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-bm-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                             <input
@@ -328,17 +328,17 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                 value={searchMenu}
                                 onChange={(e) => setSearchMenu(e.target.value)}
                                 placeholder="Cari menu..."
-                                className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-gray-200 bg-gray-50/50 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent focus:bg-white transition-all placeholder:text-gray-400"
+                                className="w-full pl-10 pr-4 py-2.5 rounded-full border border-gray-200 bg-bm-cream/60 text-sm focus:outline-none focus:ring-2 focus:ring-bm-gold-400 focus:border-transparent focus:bg-white transition-all placeholder:text-bm-text-muted"
                             />
                         </div>
                         {/* Kategori Tabs */}
                         <div className="flex gap-2 overflow-x-auto pb-1 custom-scrollbar">
                             <button
                                 onClick={() => setSelectedKategori('Semua')}
-                                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                                className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                                     selectedKategori === 'Semua'
-                                        ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                        ? 'bg-bm-gold-400 text-bm-charcoal-900 shadow-soft'
+                                        : 'bg-transparent text-bm-text-muted border border-gray-200 hover:bg-bm-cream'
                                 }`}
                             >
                                 Semua Menu
@@ -347,10 +347,10 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                 <button
                                     key={kat}
                                     onClick={() => setSelectedKategori(kat)}
-                                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 capitalize ${
+                                    className={`whitespace-nowrap px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 capitalize ${
                                         selectedKategori === kat
-                                            ? 'bg-amber-500 text-white shadow-sm shadow-amber-200'
-                                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                            ? 'bg-bm-gold-400 text-bm-charcoal-900 shadow-soft'
+                                            : 'bg-transparent text-bm-text-muted border border-gray-200 hover:bg-bm-cream'
                                     }`}
                                 >
                                     {kat}
@@ -360,11 +360,11 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                     </div>
 
                     {/* Grid Menu */}
-                    <div className="flex-1 overflow-y-auto p-4 lg:p-5 custom-scrollbar bg-gray-50/30">
+                    <div className="flex-1 overflow-y-auto p-4 lg:p-5 custom-scrollbar bg-bm-cream/30">
                         {filteredMenus.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                                <span className="text-4xl mb-2">🍽️</span>
-                                <p className="font-medium">
+                            <div className="flex flex-col items-center justify-center h-full text-bm-text-muted">
+                                <span className="text-5xl mb-3 opacity-40 animate-float">🍽️</span>
+                                <p className="font-serif italic text-lg text-bm-charcoal-800">
                                     {searchMenu ? `Tidak ada menu "${searchMenu}"` : 'Belum ada menu di kategori ini.'}
                                 </p>
                             </div>
@@ -379,10 +379,10 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                             key={menu.id}
                                             onClick={() => addToCart(menu)}
                                             disabled={menu.stok <= 0}
-                                            className={`group flex flex-col bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:ring-offset-1 relative ${
+                                            className={`group flex flex-col bg-white rounded-2xl shadow-soft hover:shadow-elevated hover:-translate-y-1 transition-all duration-300 border overflow-hidden text-left focus:outline-none focus:ring-2 focus:ring-bm-gold-400/50 focus:ring-offset-1 relative ${
                                                 menu.stok <= 0
                                                     ? 'opacity-50 cursor-not-allowed border-gray-200'
-                                                    : 'border-gray-100 hover:border-amber-300/60'
+                                                    : 'border-black/[0.05] hover:border-bm-gold-400/60'
                                             }`}
                                         >
                                             <div className="w-full h-32 bg-gray-100 relative overflow-hidden">
@@ -398,23 +398,32 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                                     </div>
                                                 )}
                                                 {/* Badge Stok */}
-                                                <div className={`absolute top-2 right-2 backdrop-blur-md text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                                                    menu.stok <= 0 ? 'bg-red-500/90 text-white' : menu.stok <= 5 ? 'bg-amber-100/90 text-amber-700 border border-amber-200/50' : 'bg-white/80 text-gray-600 border border-gray-200/50'
+                                                <div className={`absolute top-2 right-2 backdrop-blur-md text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                                    menu.stok <= 0 ? 'bg-bm-red-500/90 text-white' : menu.stok < 3 ? 'bg-bm-red-50/90 text-bm-red-700 border border-bm-red-600/20' : 'bg-bm-gold-100/90 text-bm-charcoal-900 border border-bm-gold-500/30'
                                                 }`}>
                                                     {menu.stok <= 0 ? 'Habis' : `Stok ${menu.stok}`}
                                                 </div>
                                                 {/* Badge qty in cart */}
                                                 {qtyInCart > 0 && (
-                                                    <div className="absolute top-2 left-2 bg-amber-500 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md ring-2 ring-white/80">
+                                                    <div className="absolute top-2 left-2 bg-bm-red-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center shadow-md ring-2 ring-white/80">
                                                         {qtyInCart}
+                                                    </div>
+                                                )}
+                                                {/* Overlay "+ Tambah" muncul saat hover */}
+                                                {menu.stok > 0 && (
+                                                    <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-transform duration-300 bg-gradient-to-t from-bm-charcoal-900/85 to-transparent flex items-end justify-center pb-2.5 pt-6">
+                                                        <span className="inline-flex items-center gap-1 text-white text-xs font-bold bg-bm-red-600 rounded-full px-3 py-1 shadow-lg">
+                                                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" /></svg>
+                                                            Tambah
+                                                        </span>
                                                     </div>
                                                 )}
                                             </div>
                                             <div className="p-3">
-                                                <h3 className="font-semibold text-gray-800 line-clamp-1 group-hover:text-amber-600 transition-colors text-[13px] leading-snug">
+                                                <h3 className="font-serif font-semibold text-bm-charcoal-900 line-clamp-1 text-[15px] leading-snug">
                                                     {menu.nama_menu}
                                                 </h3>
-                                                <p className="text-base font-extrabold text-gray-900 mt-1 tracking-tight">
+                                                <p className="text-base font-bold text-bm-red-600 mt-1 tracking-tight">
                                                     {formatRupiah(menu.harga)}
                                                 </p>
                                             </div>
@@ -427,14 +436,14 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                 </div>
 
                 {/* ═══ Bagian Kanan: Keranjang ═══ */}
-                <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden shrink-0 z-20">
+                <div className="w-full lg:w-[380px] xl:w-[420px] flex flex-col bg-white rounded-2xl shadow-soft border border-black/[0.05] overflow-hidden shrink-0 z-20">
                     {/* Header Keranjang */}
-                    <div className="p-4 border-b border-gray-100 bg-gray-50/30 flex items-center justify-between">
-                        <h2 className="text-base font-bold text-gray-900 flex items-center gap-2">
-                            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+                    <div className="p-4 border-b border-black/[0.05] bg-bm-cream/40 flex items-center justify-between">
+                        <h2 className="text-lg font-serif font-bold text-bm-charcoal-900 flex items-center gap-2">
+                            <svg className="w-5 h-5 text-bm-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
                             Keranjang
                             {totalItem > 0 && (
-                                <span className="bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                                <span className="bg-bm-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
                                     {totalItem}
                                 </span>
                             )}
@@ -442,7 +451,7 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                         {cart.length > 0 && (
                             <button
                                 onClick={clearCart}
-                                className="text-xs text-red-500 hover:text-red-700 font-medium transition-colors"
+                                className="text-xs text-bm-red-500 hover:text-bm-red-700 font-semibold transition-colors"
                             >
                                 Kosongkan
                             </button>
@@ -473,11 +482,11 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                         <div className="flex-1 p-4">
                         {cart.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-full text-sm py-8">
-                                <div className="w-14 h-14 rounded-2xl bg-gray-100 flex items-center justify-center mb-3">
-                                    <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
+                                <div className="w-16 h-16 rounded-2xl bg-bm-cream flex items-center justify-center mb-3 opacity-60">
+                                    <svg className="w-8 h-8 text-bm-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" /></svg>
                                 </div>
-                                <p className="font-semibold text-gray-600">Keranjang masih kosong</p>
-                                <p className="text-xs mt-1 text-gray-400">Klik menu di sebelah kiri untuk menambah pesanan</p>
+                                <p className="font-serif italic text-base text-bm-charcoal-800">Keranjang masih kosong</p>
+                                <p className="text-xs mt-1 text-bm-text-muted">Klik menu di sebelah kiri untuk menambah pesanan</p>
                             </div>
                         ) : (
                             <div className="space-y-3">
@@ -539,8 +548,8 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                 <span className="font-semibold text-gray-900">{totalItem} item</span>
                             </div>
                             <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-                                <span className="text-base font-bold text-gray-800">Total Tagihan</span>
-                                <span className="text-lg font-bold text-amber-600">{formatRupiah(totalHarga)}</span>
+                                <span className="text-base font-bold text-bm-charcoal-900">Total Tagihan</span>
+                                <span className="font-serif text-xl font-bold text-bm-red-600">{formatRupiah(totalHarga)}</span>
                             </div>
                         </div>
 
@@ -558,10 +567,10 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                         key={type.value}
                                         type="button"
                                         onClick={() => setTipePesanan(type.value)}
-                                        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 border ${
+                                        className={`flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-all duration-200 border ${
                                             tipePesanan === type.value
-                                                ? 'border-blue-400 bg-blue-50 text-blue-700 ring-1 ring-blue-400'
-                                                : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                                ? 'border-bm-red-600 bg-bm-red-50 text-bm-red-700 ring-1 ring-bm-red-600'
+                                                : 'border-gray-200 bg-white text-bm-text-muted hover:bg-bm-cream'
                                         }`}
                                     >
                                         <span>{type.icon}</span>
@@ -586,12 +595,17 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                         key={method.value}
                                         type="button"
                                         onClick={() => { setMetodePembayaran(method.value); resetDigitalStatus(); }}
-                                        className={`flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-lg text-xs font-medium transition-all duration-200 border ${
+                                        className={`relative flex flex-col items-center justify-center gap-1 px-2 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 border ${
                                             metodePembayaran === method.value
-                                                ? 'border-amber-400 bg-amber-50 text-amber-700 ring-1 ring-amber-400 shadow-sm'
-                                                : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+                                                ? 'border-bm-gold-500 bg-gradient-to-b from-bm-gold-100 to-bm-gold-300/40 text-bm-charcoal-900 ring-1 ring-bm-gold-500 shadow-soft'
+                                                : 'border-gray-200 bg-white text-bm-text-muted hover:bg-bm-cream'
                                         }`}
                                     >
+                                        {metodePembayaran === method.value && (
+                                            <span className="absolute top-1 right-1 w-4 h-4 rounded-full bg-bm-gold-500 text-white flex items-center justify-center shadow-sm">
+                                                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>
+                                            </span>
+                                        )}
                                         <span className="text-lg">{method.icon}</span>
                                         {method.label}
                                     </button>
@@ -620,9 +634,9 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                         onChange={e => setUangDiterima(e.target.value ? Number(e.target.value) : '')}
                                         placeholder="Contoh: 50000"
                                         className={`w-full text-right text-lg font-bold rounded-lg border focus:ring-2 focus:outline-none transition-colors ${
-                                            uangDiterima !== '' && !isUangCukup 
-                                                ? 'border-red-300 focus:border-red-400 focus:ring-red-400 bg-red-50 text-red-900' 
-                                                : 'border-gray-300 focus:border-amber-400 focus:ring-amber-400'
+                                            uangDiterima !== '' && !isUangCukup
+                                                ? 'border-red-300 focus:border-red-400 focus:ring-red-400 bg-bm-red-50 text-bm-red-700'
+                                                : 'border-gray-300 focus:border-bm-gold-400 focus:ring-bm-gold-400'
                                         }`}
                                     />
                                     {uangDiterima !== '' && !isUangCukup && (
@@ -642,7 +656,7 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                     </div>
 
                     {/* Area Tombol Bottom (Sticky) */}
-                    <div className="p-4 border-t border-gray-100 bg-white mt-auto shrink-0 z-10 shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.06)]">
+                    <div className="p-4 border-t border-black/[0.05] bg-white mt-auto shrink-0 z-10 shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.06)]">
                         {/* Tombol Final Checkout */}
                         <button
                             onClick={handleCheckout}
@@ -652,8 +666,8 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                 (metodePembayaran === 'Tunai' && !isUangCukup) ||
                                 digitalStatus === 'loading'
                             }
-                            className={`w-full py-3.5 text-[15px] font-bold rounded-xl shadow-md transition-all duration-200 inline-flex items-center justify-center gap-2 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:shadow-lg active:scale-[0.98] ${
-                                metodePembayaran === 'Tunai' ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 shadow-amber-200' : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-blue-200'
+                            className={`w-full py-3.5 text-[15px] font-bold rounded-full shadow-soft transition-all duration-200 inline-flex items-center justify-center gap-2 text-white disabled:bg-none disabled:bg-bm-gold-300/60 disabled:text-bm-charcoal-700 disabled:shadow-none disabled:cursor-not-allowed hover:shadow-elevated hover:-translate-y-0.5 active:translate-y-0 ${
+                                metodePembayaran === 'Tunai' ? 'bg-gradient-to-r from-bm-red-500 to-bm-red-700' : 'bg-gradient-to-r from-bm-charcoal-700 to-bm-charcoal-900'
                             }`}
                         >
                             {isProcessing ? (
@@ -696,22 +710,22 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                     >
                         {/* Icon Dompet */}
                         <div className="flex justify-center mb-4">
-                            <div className="w-16 h-16 rounded-full bg-amber-100 flex items-center justify-center ring-4 ring-amber-50">
-                                <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div className="w-16 h-16 rounded-full bg-bm-gold-100 flex items-center justify-center ring-4 ring-bm-gold-100/50">
+                                <svg className="w-8 h-8 text-bm-gold-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a2.25 2.25 0 00-2.25-2.25H15a3 3 0 11-6 0H5.25A2.25 2.25 0 003 12m18 0v6a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 18v-6m18 0V9M3 12V9m18 0a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 013 9m18 0V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 013 6v3" />
                                 </svg>
                             </div>
                         </div>
 
                         {/* Judul */}
-                        <h3 className="text-xl font-bold text-gray-900 text-center">
+                        <h3 className="text-xl font-serif font-bold text-bm-charcoal-900 text-center">
                             Konfirmasi Pembayaran
                         </h3>
 
                         {/* Deskripsi Dinamis */}
                         <p className="text-gray-600 text-center mt-2 text-sm leading-relaxed">
                             Proses pembayaran <span className="font-semibold text-gray-800">Tunai</span> sebesar{' '}
-                            <span className="font-bold text-amber-600">{formatRupiah(totalHarga)}</span>{' '}
+                            <span className="font-bold text-bm-red-600">{formatRupiah(totalHarga)}</span>{' '}
                             dengan uang diterima{' '}
                             <span className="font-bold text-green-600">{formatRupiah(Number(uangDiterima))}</span>?
                         </p>
@@ -769,7 +783,7 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                             </button>
                             <button
                                 onClick={confirmCheckout}
-                                className="flex-1 px-4 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all duration-200 active:scale-[0.98] inline-flex items-center justify-center gap-2"
+                                className="flex-1 px-4 py-2.5 rounded-full bg-gradient-to-b from-bm-red-500 to-bm-red-600 hover:from-bm-red-600 hover:to-bm-red-700 text-white font-semibold text-sm shadow-soft hover:shadow-elevated transition-all duration-200 active:scale-[0.98] inline-flex items-center justify-center gap-2"
                             >
                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

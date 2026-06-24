@@ -89,7 +89,7 @@ const UserFormModal = ({
           <select
             className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm
                        bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                       focus:outline-none focus:ring-2 focus:ring-amber-400"
+                       focus:outline-none focus:ring-2 focus:ring-bm-gold-400"
             value={data.role}
             onChange={(e) => setData('role', e.target.value)}
             required

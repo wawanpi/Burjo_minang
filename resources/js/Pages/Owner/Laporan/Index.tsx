@@ -180,7 +180,7 @@ const ChartTooltip = ({ active, payload }: {
   return (
     <div className="bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg px-3 py-2 shadow-lg border border-gray-700">
       <p className="text-gray-300 mb-0.5">{data.label}</p>
-      <p className="font-medium text-amber-400">
+      <p className="font-semibold text-bm-gold-400">
         {formatRupiah(data.total)}
       </p>
     </div>
@@ -317,21 +317,24 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
         {/* ═══════════════════════════════════════════════════
             1. HEADER SECTION
         ═══════════════════════════════════════════════════ */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 animate-page-enter">
           <div>
-            <h1 className="text-xl font-medium text-gray-900 dark:text-gray-100">
-              Laporan
-            </h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+            <span className="bm-eyebrow block mb-1.5">Audit & Keuangan</span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-bm-gold-500 text-lg leading-none select-none">✦</span>
+              <h1 className="text-2xl lg:text-[28px] font-serif font-bold text-bm-charcoal-900 leading-tight">Laporan</h1>
+            </div>
+            <div className="bm-gold-underline mt-3" />
+            <p className="text-sm text-bm-text-muted mt-2">
               Audit keuangan dan riwayat operasional restoran · {todayStr}
             </p>
           </div>
           {isKeuangan && (
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium
-                         bg-amber-500 hover:bg-amber-600 text-white
-                         transition-colors duration-150 active:scale-[0.97] self-start"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold
+                         bg-bm-gold-400 hover:bg-bm-gold-500 text-bm-charcoal-900 shadow-soft
+                         transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5 self-start"
             >
               <IconPrinter />
               Cetak Laporan
@@ -347,10 +350,10 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
             <button
               key={t.key}
               onClick={() => switchTab(t.key)}
-              className={`relative flex items-center gap-2 px-5 py-3 text-sm font-medium transition-all duration-200 focus:outline-none ${
+              className={`relative flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all duration-200 focus:outline-none ${
                 tab === t.key
-                  ? 'text-amber-600 dark:text-amber-400'
-                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                  ? 'text-bm-charcoal-900'
+                  : 'text-bm-text-muted hover:text-bm-charcoal-800'
               }`}
             >
               {t.key === 'keuangan'
@@ -358,9 +361,9 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
                 : <IconHistory className="w-4 h-4" />
               }
               <span>{t.label}</span>
-              {/* Garis bawah aktif */}
+              {/* Garis bawah aktif — emas */}
               {tab === t.key && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-amber-500 rounded-full" />
+                <span className="absolute -bottom-px left-0 right-0 h-0.5 bg-gradient-to-r from-bm-gold-500 to-bm-gold-300 rounded-full" />
               )}
             </button>
           ))}
@@ -371,69 +374,31 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
         ═══════════════════════════════════════════════════ */}
         {isKeuangan && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {/* Total Pendapatan */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Total Pendapatan</p>
-                  <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">
-                    {formatRupiah(stats.total)}
-                  </p>
-                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Periode terpilih</p>
-                </div>
-                <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center text-amber-600 dark:text-amber-400 flex-shrink-0">
-                  <IconCoin className="w-[18px] h-[18px]" />
-                </div>
-              </div>
-            </div>
-
-            {/* Jumlah Transaksi */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Jumlah Transaksi</p>
-                  <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">
-                    {stats.count.toLocaleString('id-ID')}
-                  </p>
-                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Lunas & selesai</p>
-                </div>
-                <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center text-blue-600 dark:text-blue-400 flex-shrink-0">
-                  <IconReceipt className="w-[18px] h-[18px]" />
+            {[
+              { label: 'Total Pendapatan',     value: formatRupiah(stats.total),               sub: 'Periode terpilih',     icon: <IconCoin className="w-[18px] h-[18px]" /> },
+              { label: 'Jumlah Transaksi',     value: stats.count.toLocaleString('id-ID'),     sub: 'Lunas & selesai',      icon: <IconReceipt className="w-[18px] h-[18px]" /> },
+              { label: 'Rata-rata / Transaksi',value: formatRupiah(stats.avg),                 sub: 'Per order',            icon: <IconChartBar className="w-[18px] h-[18px]" /> },
+              { label: 'Metode Terbanyak',     value: stats.topMetode,                         sub: 'Dari data halaman ini',icon: <IconCreditCard className="w-[18px] h-[18px]" />, capitalize: true },
+            ].map((c, i) => (
+              <div
+                key={c.label}
+                className="bg-gradient-to-br from-bm-charcoal-800 to-bm-charcoal-900 border border-white/[0.06] rounded-2xl p-5 shadow-soft opacity-0 animate-page-enter"
+                style={{ animationDelay: `${i * 70}ms` }}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[11px] uppercase tracking-[0.08em] font-semibold text-white/50">{c.label}</p>
+                    <p className={`font-serif text-[26px] font-bold text-bm-gold-400 mt-1.5 leading-none ${c.capitalize ? 'capitalize' : ''}`}>
+                      {c.value}
+                    </p>
+                    <p className="text-[11px] text-white/40 mt-2">{c.sub}</p>
+                  </div>
+                  <div className="w-10 h-10 rounded-[10px] bg-bm-gold-500/15 flex items-center justify-center text-bm-gold-400 flex-shrink-0">
+                    {c.icon}
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Rata-rata / Transaksi */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Rata-rata / Transaksi</p>
-                  <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">
-                    {formatRupiah(stats.avg)}
-                  </p>
-                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Per order</p>
-                </div>
-                <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 flex-shrink-0">
-                  <IconChartBar className="w-[18px] h-[18px]" />
-                </div>
-              </div>
-            </div>
-
-            {/* Metode Terbanyak */}
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-xl p-5">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Metode Terbanyak</p>
-                  <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1 capitalize">
-                    {stats.topMetode}
-                  </p>
-                  <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-1">Dari data halaman ini</p>
-                </div>
-                <div className="w-9 h-9 rounded-lg bg-orange-50 dark:bg-orange-900/20 flex items-center justify-center text-orange-600 dark:text-orange-400 flex-shrink-0">
-                  <IconCreditCard className="w-[18px] h-[18px]" />
-                </div>
-              </div>
-            </div>
+            ))}
           </div>
         )}
 
@@ -441,36 +406,42 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
             CHART: Pendapatan Harian (tab Keuangan, jika ada data)
         ═══════════════════════════════════════════════════ */}
         {isKeuangan && chartData.length > 0 && (
-          <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-100 dark:border-gray-800 p-5">
+          <div className="bg-gradient-to-br from-bm-charcoal-800 to-bm-charcoal-900 rounded-2xl border border-white/[0.06] p-5 shadow-soft">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-                <IconChartBar className="w-4 h-4 text-gray-400" />
+              <h3 className="text-base font-serif font-bold text-white flex items-center gap-2">
+                <IconChartBar className="w-4 h-4 text-bm-gold-400" />
                 Pendapatan Harian
               </h3>
-              <span className="text-xs text-gray-400 dark:text-gray-500">
+              <span className="text-xs text-white/40">
                 {chartData.length} hari
               </span>
             </div>
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -10 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="text-gray-100 dark:text-gray-800" />
+                <defs>
+                  <linearGradient id="laporanBarGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%"   stopColor="#FDE047" />
+                    <stop offset="100%" stopColor="#EAB308" />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.08)" />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                  tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.4)' }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                  tick={{ fontSize: 11, fill: 'rgba(255,255,255,0.4)' }}
                   axisLine={false}
                   tickLine={false}
                   tickFormatter={(v: number) => v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}jt` : v >= 1_000 ? `${(v / 1_000).toFixed(0)}rb` : String(v)}
                 />
-                <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(245,158,11,0.06)' }} />
+                <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(250,204,21,0.08)' }} />
                 <Bar
                   dataKey="total"
-                  fill="#F59E0B"
-                  radius={[4, 4, 0, 0]}
+                  fill="url(#laporanBarGradient)"
+                  radius={[6, 6, 0, 0]}
                   maxBarSize={40}
                 />
               </BarChart>
@@ -510,7 +481,7 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
                   onChange={(e) => setDari(e.target.value)}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700
                              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                             focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400
+                             focus:outline-none focus:ring-2 focus:ring-bm-gold-400/50 focus:border-bm-gold-400
                              transition-colors duration-150"
                 />
               </div>
@@ -524,7 +495,7 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
                   onChange={(e) => setSampai(e.target.value)}
                   className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700
                              bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                             focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400
+                             focus:outline-none focus:ring-2 focus:ring-bm-gold-400/50 focus:border-bm-gold-400
                              transition-colors duration-150"
                 />
               </div>
@@ -538,7 +509,7 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
                 onChange={(e) => setTipe(e.target.value)}
                 className="px-3 py-2 text-sm rounded-lg border border-gray-200 dark:border-gray-700
                            bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
-                           focus:outline-none focus:ring-2 focus:ring-amber-400/50 focus:border-amber-400
+                           focus:outline-none focus:ring-2 focus:ring-bm-gold-400/50 focus:border-bm-gold-400
                            transition-colors duration-150 min-w-[140px]"
               >
                 {TIPE_OPTIONS.map((opt) => (
@@ -551,15 +522,15 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
             <div className="flex items-end gap-2">
               <button
                 onClick={applyFilter}
-                className="px-5 py-2 rounded-lg text-sm font-medium bg-amber-500 hover:bg-amber-600 text-white
-                           transition-colors duration-150 active:scale-[0.97]"
+                className="px-5 py-2 rounded-full text-sm font-semibold bg-bm-gold-400 hover:bg-bm-gold-500 text-bm-charcoal-900 shadow-soft
+                           transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5"
               >
                 Terapkan
               </button>
               <button
                 onClick={resetFilter}
-                className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-300 dark:border-gray-600
-                           text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800
+                className="px-4 py-2 rounded-full text-sm font-semibold border border-gray-300 dark:border-gray-600
+                           text-bm-charcoal-800 dark:text-gray-300 hover:bg-bm-cream dark:hover:bg-gray-800
                            transition-colors duration-150"
               >
                 Reset
@@ -588,9 +559,9 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="bg-gray-50 dark:bg-gray-800/50">
+                <tr className="bg-bm-cream dark:bg-gray-800/50">
                   {tableHeaders.map((h) => (
-                    <th key={h} className="px-5 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                    <th key={h} className="px-5 py-3.5 text-left text-[11px] font-semibold text-bm-text-muted dark:text-gray-400 uppercase tracking-[0.08em] whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -628,7 +599,7 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
                       <tr
                         key={order.id}
                         className="border-b border-gray-100 dark:border-gray-800 last:border-b-0
-                                   hover:bg-amber-50/50 dark:hover:bg-amber-900/5 transition-colors duration-150"
+                                   hover:bg-bm-cream dark:hover:bg-amber-900/5 transition-colors duration-150"
                       >
                         {/* # */}
                         <td className="px-5 py-3.5 text-xs text-gray-400 dark:text-gray-500 font-medium">
@@ -645,7 +616,7 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
                           })}
                         </td>
                         {/* Total */}
-                        <td className="px-5 py-3.5 font-semibold text-gray-900 dark:text-gray-100 whitespace-nowrap text-right tabular-nums">
+                        <td className="px-5 py-3.5 font-bold text-bm-red-600 whitespace-nowrap text-right tabular-nums">
                           {formatRupiah(order.total_harga)}
                         </td>
                         {/* Metode */}

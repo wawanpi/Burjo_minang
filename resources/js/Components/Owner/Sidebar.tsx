@@ -91,34 +91,45 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
     });
 
     return (
-        <aside className={`w-64 bg-gray-950 border-t-4 border-[#990000] flex flex-col min-h-screen fixed left-0 top-0 bottom-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 shadow-2xl shadow-black/50 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`w-64 bg-bm-charcoal-900 flex flex-col min-h-screen fixed left-0 top-0 bottom-0 z-50 transform transition-transform duration-300 ease-in-out lg:translate-x-0 shadow-2xl shadow-black/50 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+
+            {/* Top accent — red→gold gradient hairline */}
+            <div className="absolute top-0 inset-x-0 h-[3px] bm-top-accent" />
 
             {/* Header Sidebar */}
-            <div className="flex items-center justify-between px-5 py-6 border-b border-white/5">
-                <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden shadow-lg shadow-black/20">
-                        <img
-                            src="/images/logo-burjo.jpg"
-                            alt="Burjo Minang Logo"
-                            className="w-full h-full object-cover rounded-full"
-                        />
+            <div className="px-5 py-6">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-white/5 ring-1 ring-bm-gold-400/30 flex items-center justify-center overflow-hidden shadow-lg shadow-black/20">
+                            <img
+                                src="/images/logo-burjo.jpg"
+                                alt="Burjo Minang Logo"
+                                className="w-full h-full object-cover rounded-full"
+                            />
+                        </div>
+                        <div>
+                            <span className="block text-[15px] font-serif font-bold text-white uppercase tracking-wide drop-shadow-sm leading-tight">Burjo Minang</span>
+                            <span className="block text-[10px] font-semibold text-bm-gold-400 uppercase tracking-[0.18em] mt-0.5">
+                                {userRole === 'owner' ? 'Owner Panel' : 'Kasir Panel'}
+                            </span>
+                        </div>
                     </div>
-                    <div>
-                        <span className="text-base font-serif font-bold text-white tracking-wide drop-shadow-sm">Burjo Minang</span>
-                        <span className="block text-[10px] font-medium text-yellow-400 uppercase tracking-[0.2em] mt-0.5">
-                            {userRole === 'owner' ? 'Owner Panel' : 'Kasir Panel'}
-                        </span>
-                    </div>
+                    {/* Tombol Tutup Khusus Mobile */}
+                    <button onClick={() => setIsOpen && setIsOpen(false)} className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                 </div>
-                {/* Tombol Tutup Khusus Mobile */}
-                <button onClick={() => setIsOpen && setIsOpen(false)} className="lg:hidden p-1.5 rounded-lg hover:bg-white/10 text-gray-500 hover:text-white transition-colors">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
+                {/* Ornamen garis emas tipis di bawah logo */}
+                <div className="mt-5 flex items-center gap-2">
+                    <span className="block h-px flex-1 bg-gradient-to-r from-transparent via-bm-gold-400/40 to-transparent" />
+                    <span className="text-bm-gold-400/70 text-[10px] leading-none">✦</span>
+                    <span className="block h-px flex-1 bg-gradient-to-r from-transparent via-bm-gold-400/40 to-transparent" />
+                </div>
             </div>
 
             {/* Section Label */}
-            <div className="px-4 pt-6 pb-2">
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest block mb-2">Menu Utama</span>
+            <div className="px-4 pb-2">
+                <span className="bm-eyebrow text-gray-500 block">Menu Utama</span>
             </div>
 
             {/* Navigasi (Menu) */}
@@ -130,20 +141,24 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
                             key={item.label}
                             href={item.href}
                             onClick={() => setIsOpen && setIsOpen(false)}
-                            className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300 text-[13px] ${
+                            className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-300 text-[13px] overflow-hidden ${
                                 active
-                                    ? "bg-[#990000] text-white font-medium shadow-md shadow-[#990000]/20"
-                                    : "text-gray-400 hover:bg-white/10 hover:text-white font-normal"
+                                    ? "bg-gradient-to-r from-bm-maroon-700 to-bm-red-700 text-white font-semibold shadow-lg shadow-bm-maroon-700/30"
+                                    : "text-gray-400 hover:bg-white/[0.04] hover:text-white font-normal"
                             }`}
                         >
+                            {/* Left indicator: gold bar — full when active, slides in on hover */}
+                            <span className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] rounded-r-full bg-bm-gold-400 transition-all duration-300 ${
+                                active ? 'h-6 shadow-[0_0_8px_rgba(250,204,21,0.5)]' : 'h-0 group-hover:h-4 opacity-80'
+                            }`} />
                             <span className={`flex-shrink-0 transition-colors duration-300 ${
-                                active ? 'text-yellow-400' : 'text-gray-500 group-hover:text-gray-300'
+                                active ? 'text-bm-gold-400' : 'text-gray-500 group-hover:text-gray-300'
                             }`}>
                                 {item.icon}
                             </span>
                             {item.label}
                             {active && (
-                                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
+                                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-bm-gold-400 shadow-[0_0_8px_rgba(250,204,21,0.6)]" />
                             )}
                         </Link>
                     );
@@ -154,12 +169,12 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
             <div className="p-3 border-t border-white/5 pt-4 bg-black/20">
                 {/* User Mini Info */}
                 <div className="flex items-center gap-3 px-3 py-2.5 mb-2">
-                    <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-sm font-semibold text-white uppercase border border-white/5">
+                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-bm-red-600 to-bm-charcoal-700 flex items-center justify-center text-sm font-bold text-white uppercase ring-1 ring-bm-gold-400/40 shadow-md shadow-black/30">
                         {userName.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-white truncate">{userName}</p>
-                        <p className="text-xs text-gray-500 capitalize">{userRole}</p>
+                        <p className="text-[11px] text-bm-gold-400/80 capitalize tracking-wide">{userRole}</p>
                     </div>
                 </div>
 
@@ -167,7 +182,7 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
                     href="/logout"
                     method="post"
                     as="button"
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-red-400 hover:bg-[#990000]/20 hover:text-red-300 transition-all duration-300 text-sm font-semibold border border-transparent hover:border-red-500/20"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-bm-red-500 hover:bg-bm-red-500/10 hover:text-red-300 transition-all duration-300 text-sm font-semibold border border-transparent hover:border-bm-red-500/20"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

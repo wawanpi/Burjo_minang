@@ -82,18 +82,27 @@ interface Props {
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 const statusConfig: Record<string, { label: string; color: string }> = {
-    menunggu_pembayaran: { label: 'Menunggu Bayar', color: 'bg-amber-100 text-amber-800' },
-    diproses:           { label: 'Diproses',       color: 'bg-blue-100 text-blue-800' },
-    selesai:            { label: 'Selesai',         color: 'bg-green-100 text-green-800' },
-    batal:              { label: 'Batal',           color: 'bg-red-100 text-red-800' },
+    menunggu_pembayaran: { label: 'Menunggu Bayar', color: 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/15' },
+    diproses:           { label: 'Diproses',       color: 'bg-sky-50 text-sky-700 ring-1 ring-sky-600/15' },
+    selesai:            { label: 'Selesai',         color: 'bg-green-50 text-green-700 ring-1 ring-green-600/15' },
+    batal:              { label: 'Batal',           color: 'bg-bm-red-50 text-bm-red-700 ring-1 ring-bm-red-600/15' },
 };
 
 const paymentStatusConfig: Record<string, { label: string; color: string }> = {
-    pending:     { label: 'Pending',    color: 'bg-amber-100 text-amber-800' },
-    lunas:       { label: 'Lunas',      color: 'bg-green-100 text-green-800' },
-    gagal:       { label: 'Gagal',      color: 'bg-red-100 text-red-800' },
-    expired:     { label: 'Expired',    color: 'bg-gray-100 text-gray-700' },
-    kadaluarsa:  { label: 'Kadaluarsa', color: 'bg-gray-100 text-gray-700' },
+    pending:     { label: 'Pending',    color: 'bg-amber-50 text-amber-700 ring-1 ring-amber-600/15' },
+    lunas:       { label: 'Lunas',      color: 'bg-green-50 text-green-700 ring-1 ring-green-600/15' },
+    gagal:       { label: 'Gagal',      color: 'bg-bm-red-50 text-bm-red-700 ring-1 ring-bm-red-600/15' },
+    expired:     { label: 'Expired',    color: 'bg-gray-100 text-gray-600 ring-1 ring-gray-500/10' },
+    kadaluarsa:  { label: 'Kadaluarsa', color: 'bg-gray-100 text-gray-600 ring-1 ring-gray-500/10' },
+};
+
+// Warna pill aktif untuk tab filter status
+const filterActiveColor: Record<string, string> = {
+    '':                  'bg-bm-gold-400 text-bm-charcoal-900',
+    menunggu_pembayaran: 'bg-amber-500 text-white',
+    diproses:            'bg-sky-500 text-white',
+    selesai:             'bg-green-600 text-white',
+    batal:               'bg-bm-red-600 text-white',
 };
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -156,7 +165,7 @@ export default function OrderIndex({ orders, filters }: Props) {
     // Helper Fungsi Row Styling
     const getRowStyle = (order: Order) => {
         if (order.status_pesanan === 'selesai' || order.status_pesanan === 'batal') 
-            return 'hover:bg-amber-50/50 transition-colors duration-150';
+            return 'hover:bg-bm-cream transition-colors duration-150';
 
         if (order.status_pesanan === 'diproses') {
             if (order.tipe_pesanan === 'online' && order.sisa_menit !== null) {
@@ -277,20 +286,25 @@ export default function OrderIndex({ orders, filters }: Props) {
             )}
 
             {/* Header + Filter */}
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between animate-page-enter">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Daftar Pesanan</h1>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <span className="bm-eyebrow block mb-1.5">Operasional</span>
+                    <div className="flex items-center gap-2.5">
+                        <span className="text-bm-gold-500 text-lg leading-none select-none">✦</span>
+                        <h1 className="text-2xl lg:text-[28px] font-serif font-bold text-bm-charcoal-900 leading-tight">Daftar Pesanan</h1>
+                    </div>
+                    <div className="bm-gold-underline mt-3" />
+                    <p className="text-sm text-bm-text-muted mt-2">
                         {orders?.total || orderData.length} pesanan ditemukan
                     </p>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                     <button
                         onClick={() => handleFilterStatus('')}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                        className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                             selectedStatus === ''
-                                ? 'bg-amber-500 text-white shadow-sm'
-                                : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
+                                ? `${filterActiveColor['']} shadow-soft`
+                                : 'bg-white border border-gray-300 text-bm-text-muted hover:bg-bm-cream'
                         }`}
                     >
                         Semua
@@ -299,10 +313,10 @@ export default function OrderIndex({ orders, filters }: Props) {
                         <button
                             key={key}
                             onClick={() => handleFilterStatus(key)}
-                            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                            className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                                 selectedStatus === key
-                                    ? 'bg-amber-500 text-white shadow-sm'
-                                    : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
+                                    ? `${filterActiveColor[key]} shadow-soft`
+                                    : 'bg-white border border-gray-300 text-bm-text-muted hover:bg-bm-cream'
                             }`}
                         >
                             {cfg.label}
@@ -312,28 +326,28 @@ export default function OrderIndex({ orders, filters }: Props) {
             </div>
 
             {/* Table */}
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm w-full">
+            <div className="overflow-hidden rounded-2xl border border-black/[0.05] bg-white shadow-soft w-full animate-page-enter">
                 <div className="overflow-x-auto w-full custom-scrollbar">
                     <table className="min-w-[900px] w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                        <thead className="bg-bm-cream">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">ID / Tipe</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Pelanggan</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Item Pesanan</th>
-                                <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Total</th>
-                                <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Status</th>
-                                <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Bayar</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Waktu</th>
-                                <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Aksi</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">ID / Tipe</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Pelanggan</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Item Pesanan</th>
+                                <th className="px-6 py-3.5 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Total</th>
+                                <th className="px-6 py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Status</th>
+                                <th className="px-6 py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Bayar</th>
+                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Waktu</th>
+                                <th className="px-6 py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Aksi</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-black/[0.05]">
                             {orderData.length === 0 ? (
                                 <tr>
                                     <td colSpan={8} className="px-6 py-16 text-center">
-                                        <div className="flex flex-col items-center gap-2 text-gray-400">
-                                            <span className="text-4xl">📋</span>
-                                            <p className="font-medium">Tidak ada pesanan ditemukan.</p>
+                                        <div className="flex flex-col items-center gap-2 text-bm-text-muted">
+                                            <span className="text-5xl opacity-40 animate-float">📋</span>
+                                            <p className="font-serif italic text-lg text-bm-charcoal-800">Tidak ada pesanan ditemukan.</p>
                                             <p className="text-sm">Coba ubah filter status di atas.</p>
                                         </div>
                                     </td>
@@ -370,16 +384,22 @@ export default function OrderIndex({ orders, filters }: Props) {
                                                     ))}
                                                 </div>
                                             </td>
-                                            <td className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
+                                            <td className="px-6 py-4 text-right text-sm font-bold text-bm-red-600">
                                                 {formatRupiah(order.total_harga)}
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${sc.color}`}>
+                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${sc.color}`}>
+                                                    {order.status_pesanan === 'diproses' && (
+                                                        <span className="relative flex h-1.5 w-1.5">
+                                                            <span className="absolute inline-flex h-full w-full rounded-full bg-sky-500 opacity-60 animate-ping" />
+                                                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-sky-500" />
+                                                        </span>
+                                                    )}
                                                     {sc.label}
                                                 </span>
                                             </td>
                                             <td className="px-6 py-4 text-center">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${pc.color}`}>
+                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${pc.color}`}>
                                                     {pc.label}
                                                 </span>
                                                 {order.payment?.metode_pembayaran && (
@@ -418,7 +438,7 @@ export default function OrderIndex({ orders, filters }: Props) {
                                                             <select
                                                                 value={order.status_pesanan}
                                                                 onChange={(e) => handleUpdateStatus(order, e.target.value)}
-                                                                className="w-full px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all cursor-pointer"
+                                                                className="w-full px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-bm-gold-400 focus:border-transparent transition-all cursor-pointer"
                                                             >
                                                                 {renderStatusOptions(order)}
                                                             </select>
@@ -427,7 +447,7 @@ export default function OrderIndex({ orders, filters }: Props) {
                                                         {order.status_pesanan !== 'menunggu_pembayaran' && (
                                                             <button
                                                                 onClick={() => handlePrintNota(order.id)}
-                                                                className="w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                                                className="w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-full border border-gray-300 text-xs font-semibold text-bm-charcoal-800 hover:bg-bm-cream hover:border-gray-400 transition-colors"
                                                             >
                                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -458,9 +478,9 @@ export default function OrderIndex({ orders, filters }: Props) {
                             onClick={() => link.url && router.get(link.url, {}, { preserveState: true })}
                             className={`px-3 py-2 text-sm rounded-lg transition-colors ${
                                 link.active
-                                    ? 'bg-amber-500 text-white font-semibold shadow-sm'
+                                    ? 'bg-bm-red-600 text-white font-semibold shadow-soft'
                                     : link.url
-                                        ? 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                                        ? 'bg-white border border-gray-200 text-gray-600 hover:bg-bm-cream'
                                         : 'bg-gray-100 text-gray-400 cursor-not-allowed'
                             }`}
                             dangerouslySetInnerHTML={{ __html: link.label }}

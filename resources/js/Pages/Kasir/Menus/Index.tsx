@@ -154,15 +154,20 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
             )}
 
             {/* Header + Search + Add */}
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between animate-page-enter">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Daftar Menu</h1>
-                    <p className="text-sm text-gray-500 mt-1">Total {menus.length} menu terdaftar</p>
+                    <span className="bm-eyebrow block mb-1.5">Katalog Produk</span>
+                    <div className="flex items-center gap-2.5">
+                        <span className="text-bm-gold-500 text-lg leading-none select-none">✦</span>
+                        <h1 className="text-2xl lg:text-[28px] font-serif font-bold text-bm-charcoal-900 leading-tight">Daftar Menu</h1>
+                    </div>
+                    <div className="bm-gold-underline mt-3" />
+                    <p className="text-sm text-bm-text-muted mt-2">Total {menus.length} menu terdaftar</p>
                 </div>
                 <div className="flex items-center gap-3">
                     <div className="flex items-center gap-2">
                         <div className="relative">
-                            <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-bm-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                             <input
@@ -170,7 +175,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Cari nama menu atau kategori..."
-                                className="w-64 pl-9 pr-8 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 focus:border-transparent transition-all"
+                                className="w-64 pl-10 pr-8 py-2.5 rounded-full border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-bm-gold-400 focus:border-transparent transition-all"
                             />
                             {search && (
                                 <button
@@ -187,10 +192,10 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                     </div>
                     <button
                         onClick={openCreate}
-                        className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg shadow-sm transition-all duration-200 hover:shadow-md"
+                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-bm-gold-400 hover:bg-bm-gold-500 text-bm-charcoal-900 text-sm font-semibold rounded-full shadow-soft transition-all duration-200 hover:shadow-elevated hover:-translate-y-0.5"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
                         </svg>
                         Tambah Menu
                     </button>
@@ -198,26 +203,26 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
             </div>
 
             {/* Table */}
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+            <div className="overflow-hidden rounded-2xl border border-black/[0.05] bg-white shadow-soft animate-page-enter">
                 <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                    <thead className="bg-bm-cream">
                         <tr>
-                            <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">No</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Gambar</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Nama Menu</th>
-                            <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">Kategori</th>
-                            <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500">Harga</th>
-                            <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Stok</th>
-                            <th className="px-6 py-3 text-center text-xs font-semibold uppercase tracking-wider text-gray-500">Aksi</th>
+                            <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">No</th>
+                            <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Gambar</th>
+                            <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Nama Menu</th>
+                            <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Kategori</th>
+                            <th className="px-6 py-3.5 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Harga</th>
+                            <th className="px-6 py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Stok</th>
+                            <th className="px-6 py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-black/[0.05]">
                         {menus.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className="px-6 py-16 text-center">
-                                    <div className="flex flex-col items-center gap-2 text-gray-400">
-                                        <span className="text-4xl">🍽️</span>
-                                        <p className="font-medium">
+                                    <div className="flex flex-col items-center gap-2 text-bm-text-muted">
+                                        <span className="text-5xl opacity-40 animate-float">🍽️</span>
+                                        <p className="font-serif italic text-lg text-bm-charcoal-800">
                                             {filters?.search
                                                 ? `Tidak ada menu yang cocok dengan "${filters.search}"`
                                                 : 'Belum ada data menu.'}
@@ -230,35 +235,39 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                             </tr>
                         ) : (
                             menus.map((menu, index) => (
-                                <tr key={menu.id} className="hover:bg-amber-50/50 transition-colors duration-150">
-                                    <td className="px-6 py-4 text-sm text-gray-500">{index + 1}</td>
+                                <tr key={menu.id} className="hover:bg-bm-cream transition-colors duration-150">
+                                    <td className="px-6 py-4 text-sm text-bm-text-muted">{index + 1}</td>
                                     <td className="px-6 py-4">
                                         {menu.gambar ? (
                                             <img
                                                 src={`/storage/${menu.gambar}`}
                                                 alt={menu.nama_menu}
-                                                className="h-12 w-12 rounded-lg object-cover ring-1 ring-gray-200"
+                                                className="h-12 w-12 rounded-[10px] object-cover ring-1 ring-gray-200"
                                             />
                                         ) : (
-                                            <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center text-gray-400 text-lg">
+                                            <div className="h-12 w-12 rounded-[10px] bg-gray-100 flex items-center justify-center text-gray-400 text-lg">
                                                 🍽️
                                             </div>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4 text-sm font-medium text-gray-900">{menu.nama_menu}</td>
+                                    <td className="px-6 py-4 text-sm font-serif font-semibold text-bm-charcoal-900">{menu.nama_menu}</td>
                                     <td className="px-6 py-4">
-                                        <span className="inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-800">
+                                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${
+                                            /minum/i.test(menu.kategori)
+                                                ? 'bg-bm-red-50 text-bm-red-700 ring-bm-red-600/15'
+                                                : 'bg-bm-gold-100 text-bm-charcoal-900 ring-bm-gold-500/25'
+                                        }`}>
                                             {menu.kategori}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 text-right text-sm font-semibold text-gray-700">{formatRupiah(menu.harga)}</td>
+                                    <td className="px-6 py-4 text-right text-sm font-bold text-bm-red-600">{formatRupiah(menu.harga)}</td>
                                     <td className="px-6 py-4 text-center">
-                                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                                        <span className={`inline-flex items-center justify-center min-w-[28px] rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ${
                                             Number(menu.stok) > 10
-                                                ? 'bg-green-100 text-green-800'
+                                                ? 'bg-green-50 text-green-700 ring-green-600/15'
                                                 : Number(menu.stok) > 0
-                                                    ? 'bg-amber-100 text-amber-800'
-                                                    : 'bg-red-100 text-red-800'
+                                                    ? 'bg-amber-50 text-amber-700 ring-amber-600/15'
+                                                    : 'bg-bm-red-50 text-bm-red-700 ring-bm-red-600/15'
                                         }`}>
                                             {menu.stok}
                                         </span>
@@ -267,7 +276,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                                         <div className="flex items-center justify-center gap-2">
                                             <button
                                                 onClick={() => openEdit(menu)}
-                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-gray-300 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full border border-gray-300 text-xs font-semibold text-bm-charcoal-800 hover:bg-bm-cream hover:border-gray-400 transition-colors"
                                             >
                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -276,7 +285,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                                             </button>
                                             <button
                                                 onClick={() => handleDelete(menu)}
-                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-red-500 text-xs font-medium text-white hover:bg-red-600 transition-colors"
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-bm-red-600 text-xs font-semibold text-white hover:bg-bm-red-700 transition-colors"
                                             >
                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -303,7 +312,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                     {/* Panel */}
                     <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-xl p-6 animate-modal-in">
                         <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-lg font-semibold text-gray-900">
+                            <h2 className="text-xl font-serif font-bold text-bm-charcoal-900">
                                 {editingMenu ? 'Edit Menu' : 'Tambah Menu Baru'}
                             </h2>
                             <button
@@ -325,7 +334,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                                     value={data.nama_menu}
                                     onChange={(e) => setData('nama_menu', e.target.value)}
                                     placeholder="Contoh: Nasi Goreng Spesial"
-                                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition-colors ${
+                                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-bm-gold-400 transition-colors ${
                                         errors.nama_menu ? 'border-red-400 focus:ring-red-400' : 'border-gray-300'
                                     }`}
                                 />
@@ -340,7 +349,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                                     value={data.kategori}
                                     onChange={(e) => setData('kategori', e.target.value)}
                                     placeholder="Pilih atau ketik kategori baru"
-                                    className={`w-full px-3 py-2 rounded-lg border text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400 transition-colors ${
+                                    className={`w-full px-3 py-2 rounded-lg border text-sm bg-white focus:outline-none focus:ring-2 focus:ring-bm-gold-400 transition-colors ${
                                         errors.kategori ? 'border-red-400 focus:ring-red-400' : 'border-gray-300'
                                     }`}
                                 />
@@ -361,7 +370,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                                     onChange={(e) => setData('harga', e.target.value)}
                                     placeholder="15000"
                                     min="0"
-                                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition-colors ${
+                                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-bm-gold-400 transition-colors ${
                                         errors.harga ? 'border-red-400 focus:ring-red-400' : 'border-gray-300'
                                     }`}
                                 />
@@ -377,7 +386,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                                     onChange={(e) => setData('stok', e.target.value)}
                                     placeholder="50"
                                     min="0"
-                                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 transition-colors ${
+                                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-bm-gold-400 transition-colors ${
                                         errors.stok ? 'border-red-400 focus:ring-red-400' : 'border-gray-300'
                                     }`}
                                 />
@@ -403,7 +412,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                                     type="file"
                                     accept="image/*"
                                     onChange={(e) => setData('gambar', e.target.files?.[0] ?? null)}
-                                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 file:cursor-pointer file:transition-colors"
+                                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-bm-gold-100 file:text-bm-charcoal-900 hover:file:bg-bm-gold-300/60 file:cursor-pointer file:transition-colors"
                                 />
                                 {errors.gambar && <p className="text-xs text-red-500 mt-0.5">{errors.gambar}</p>}
                                 {editingMenu && (
@@ -422,7 +431,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                                 <button
                                     type="submit"
                                     disabled={processing}
-                                    className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-b from-bm-red-500 to-bm-red-600 hover:from-bm-red-600 hover:to-bm-red-700 text-white text-sm font-semibold rounded-full shadow-soft hover:shadow-elevated transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {processing && (
                                         <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">

@@ -6,15 +6,19 @@ import {
 } from 'recharts';
 
 import OwnerLayout from '@/Layouts/OwnerLayout';
+import StatCard from '@/Components/Owner/StatCard';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface StatCard {
+type StatColor = 'red' | 'gold' | 'charcoal' | 'teal';
+
+interface StatCardData {
   label: string;
   value: string;
   sub: string;
   icon: React.ReactNode;
-  accent: string;       // accent color classes for the icon container
-  badgeColor: string;   // badge color classes
+  color: StatColor;
+  live?: boolean;
+  liveColor?: 'success' | 'gold' | 'red';
 }
 
 interface ChartPoint {
@@ -39,9 +43,9 @@ const formatRupiah = (value: number) =>
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-xl shadow-gray-200/50">
-      <p className="text-xs text-gray-400 font-medium mb-1">{label}</p>
-      <p className="text-sm font-bold text-gray-900">{formatRupiah(payload[0].value)}</p>
+    <div className="bg-bm-charcoal-900 rounded-lg px-4 py-2.5 shadow-elevated border border-white/10">
+      <p className="text-[11px] text-bm-gold-400 font-semibold uppercase tracking-wider mb-0.5">{label}</p>
+      <p className="text-sm font-bold text-white">{formatRupiah(payload[0].value)}</p>
     </div>
   );
 };
@@ -73,106 +77,90 @@ const IconHariIni = () => (
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DashboardPage({ stats, chart_data }: Props) {
-  const cards: StatCard[] = [
+  const cards: StatCardData[] = [
     {
       label: 'Total Pendapatan',
       value: formatRupiah(stats.total_pendapatan),
       sub: 'Semua waktu (lunas)',
       icon: <IconPendapatan />,
-      accent: 'bg-[#990000]/10 text-[#990000]',
-      badgeColor: 'bg-[#fff0f0] text-[#990000]',
+      color: 'red',
+      live: true,
+      liveColor: 'red',
     },
     {
       label: 'Pendapatan Bulan Ini',
       value: formatRupiah(stats.pendapatan_bulan),
       sub: new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' }),
       icon: <IconBulan />,
-      accent: 'bg-yellow-400/20 text-yellow-600',
-      badgeColor: 'bg-yellow-50 text-yellow-600',
+      color: 'gold',
+      live: true,
+      liveColor: 'gold',
     },
     {
       label: 'Total Pesanan',
       value: stats.jumlah_pesanan.toLocaleString('id-ID'),
       sub: 'Semua status',
       icon: <IconPesanan />,
-      accent: 'bg-gray-100 text-gray-600',
-      badgeColor: 'bg-gray-100 text-gray-600',
+      color: 'charcoal',
     },
     {
       label: 'Pesanan Hari Ini',
       value: stats.pesanan_hari_ini.toLocaleString('id-ID'),
       sub: new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }),
       icon: <IconHariIni />,
-      accent: 'bg-[#990000]/10 text-[#990000]',
-      badgeColor: 'bg-[#fff0f0] text-[#990000]',
+      color: 'teal',
+      live: true,
+      liveColor: 'success',
     },
   ];
 
   return (
     <OwnerLayout title="Dashboard">
-      <div className="space-y-8">
+      <div className="space-y-8 animate-page-enter">
         {/* ── Page Header ────────────────────────────────── */}
         <div>
-          <h2 className="text-2xl sm:text-3xl font-serif font-bold text-gray-900 tracking-tight leading-snug">
+          <span className="bm-eyebrow block mb-2">Ringkasan Bisnis</span>
+          <h2 className="text-3xl sm:text-[34px] font-serif font-bold text-bm-charcoal-900 tracking-tight leading-snug">
             Selamat datang kembali.
           </h2>
-          <p className="text-sm sm:text-base text-gray-500 mt-1.5 font-medium">
+          <div className="bm-gold-underline mt-3" />
+          <p className="text-sm sm:text-base text-bm-text-muted mt-3 font-medium">
             Berikut performa bisnis hari ini.
           </p>
         </div>
 
         {/* ── Stat Cards Grid ────────────────────────────── */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
-          {cards.map((card) => (
-            <div
+          {cards.map((card, i) => (
+            <StatCard
               key={card.label}
-              className="group bg-gradient-to-br from-white to-gray-50/80 rounded-3xl p-6 shadow-xl shadow-gray-200/50 hover:shadow-2xl hover:shadow-[#990000]/10 hover:-translate-y-1 transition-all duration-500 cursor-default border border-white/60 relative overflow-hidden"
-            >
-              {/* Optional background glow */}
-              <div className="absolute -top-10 -right-10 w-32 h-32 bg-gradient-to-br from-white/40 to-transparent rounded-full blur-2xl opacity-50 pointer-events-none" />
-
-              {/* Card Top: Icon + Badge */}
-              <div className="flex items-center justify-between mb-5 relative z-10">
-                <div className={`w-12 h-12 rounded-2xl ${card.accent} flex items-center justify-center transition-transform duration-500 group-hover:scale-110 shadow-sm`}>
-                  {card.icon}
-                </div>
-                <span className={`text-[10px] font-bold px-3 py-1.5 rounded-full ${card.badgeColor} tracking-widest uppercase shadow-sm`}>
-                  Live
-                </span>
-              </div>
-
-              {/* Value */}
-              <p className="text-3xl font-extrabold text-gray-900 leading-tight tracking-tight relative z-10">
-                {card.value}
-              </p>
-
-              {/* Label */}
-              <p className="text-sm font-bold text-gray-600 mt-2 relative z-10">
-                {card.label}
-              </p>
-
-              {/* Sub Label */}
-              <p className="text-xs text-gray-400 mt-1 relative z-10 font-medium">
-                {card.sub}
-              </p>
-            </div>
+              title={card.label}
+              value={card.value}
+              subLabel={card.sub}
+              icon={card.icon}
+              color={card.color}
+              live={card.live}
+              liveColor={card.liveColor}
+              delay={i * 80}
+            />
           ))}
         </div>
 
         {/* ── Revenue Trend Chart ────────────────────────── */}
-        <div className="bg-gradient-to-br from-white to-gray-50/80 rounded-3xl shadow-xl shadow-gray-200/50 overflow-hidden hover:shadow-2xl hover:shadow-[#990000]/10 transition-all duration-500 border border-white/60">
+        <div className="bg-white rounded-2xl shadow-soft hover:shadow-elevated transition-all duration-300 border border-black/[0.05] overflow-hidden">
           {/* Chart Header */}
-          <div className="flex items-center justify-between px-8 pt-8 pb-4">
-            <div>
-              <h2 className="text-xl font-serif font-bold text-gray-900">
-                Tren Pendapatan
-              </h2>
-              <p className="text-xs text-gray-400 mt-1 tracking-wider uppercase font-medium">
-                30 hari terakhir
-              </p>
+          <div className="flex items-center justify-between px-6 lg:px-8 pt-7 pb-4">
+            <div className="flex items-center gap-2.5">
+              <span className="text-bm-gold-500 text-base leading-none select-none">✦</span>
+              <div>
+                <h2 className="text-xl lg:text-[22px] font-serif font-bold text-bm-charcoal-900">
+                  Tren Pendapatan
+                </h2>
+                <p className="bm-eyebrow mt-1">30 hari terakhir</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2.5 text-xs font-bold text-gray-500 uppercase tracking-widest px-4 py-2 bg-gray-50 rounded-full border border-gray-100 shadow-inner">
-              <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#990000] shadow-[0_0_8px_rgba(153,0,0,0.4)] animate-pulse" />
+            <div className="flex items-center gap-2 text-[11px] font-bold text-bm-text-muted uppercase tracking-widest px-3.5 py-2 bg-bm-cream rounded-full border border-black/[0.05]">
+              <span className="inline-block w-2 h-2 rounded-full bg-bm-red-600 shadow-[0_0_8px_rgba(220,38,38,0.5)] animate-pulse" />
               Pendapatan
             </div>
           </div>

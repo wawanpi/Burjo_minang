@@ -4,6 +4,87 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Burjo Minang Design Tokens ───────────────────────────────────────── */
+:root {
+    /* Charcoal (dark cards / reports) */
+    --bm-charcoal-900: #1F2730;
+    --bm-charcoal-800: #2C353F;
+    --bm-charcoal-700: #3A4350;
+
+    /* Brand — hybrid: deep maroon for big solids, brighter red for accents */
+    --bm-maroon-900: #5A0000;
+    --bm-maroon-800: #7A0000;
+    --bm-maroon-700: #990000;
+    --bm-red-700: #991B1B;
+    --bm-red-600: #B91C1C;
+    --bm-red-500: #DC2626;
+    --bm-red-50:  #FEF2F2;
+
+    /* Accent — bright gold */
+    --bm-gold-500: #EAB308;
+    --bm-gold-400: #FACC15;
+    --bm-gold-300: #FDE047;
+    --bm-gold-100: #FEF9C3;
+
+    /* Neutral */
+    --bm-cream:    #FAF7F2;
+    --bm-ivory:    #F9FAFB;
+    --bm-text-dark:  #1F2937;
+    --bm-text-muted: #6B7280;
+
+    /* Status */
+    --bm-success: #16A34A;
+    --bm-warning: #F59E0B;
+    --bm-info:    #0EA5E9;
+}
+
+/* ── Panel reusable utilities ─────────────────────────────────────────── */
+/* Decorative uppercase caption label (e.g. "NAVIGASI", "TENTANG KAMI") */
+.bm-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--bm-text-muted);
+}
+
+/* Short decorative gold underline placed under a section/page title */
+.bm-gold-underline {
+    height: 3px;
+    width: 56px;
+    border-radius: 9999px;
+    background: linear-gradient(90deg, var(--bm-gold-500), var(--bm-gold-300));
+}
+
+/* Sidebar / header top accent line */
+.bm-top-accent {
+    background: linear-gradient(90deg, var(--bm-red-600), var(--bm-gold-400));
+}
+
+/* ── Skeleton shimmer (replaces plain spinners in data areas) ─────────── */
+.bm-skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: var(--bm-cream);
+    border-radius: 10px;
+}
+.bm-skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.65),
+        transparent
+    );
+    animation: bmShimmer 1.5s infinite;
+}
+@keyframes bmShimmer {
+    100% { transform: translateX(100%); }
+}
+
 /* ── Base ──────────────────────────────────────────────────────────────── */
 html {
     scroll-behavior: smooth;

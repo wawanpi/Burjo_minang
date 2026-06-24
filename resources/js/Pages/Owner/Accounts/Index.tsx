@@ -80,22 +80,27 @@ export default function Index({ users }: Props) {
   // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <OwnerLayout title="Manajemen Akun">
-      <div className="space-y-6">
+      <div className="space-y-6 animate-page-enter">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Manajemen Akun</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-              Kelola akun kasir dan pelanggan
+            <span className="bm-eyebrow block mb-1.5">Pengguna Sistem</span>
+            <div className="flex items-center gap-2.5">
+              <span className="text-bm-gold-500 text-lg leading-none select-none">✦</span>
+              <h1 className="text-2xl lg:text-[28px] font-serif font-bold text-bm-charcoal-900 leading-tight">Manajemen Akun</h1>
+            </div>
+            <div className="bm-gold-underline mt-3" />
+            <p className="text-sm text-bm-text-muted mt-2">
+              Kelola akun kasir dan pelanggan — Total {users.length} pengguna terdaftar
             </p>
           </div>
-          <Button onClick={handleOpenCreate}>+ Tambah Pengguna</Button>
+          <Button variant="gold" onClick={handleOpenCreate}>
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+            Tambah Pengguna
+          </Button>
         </div>
-
-        {/* Stats ringkas */}
-        <p className="text-sm text-gray-500 dark:text-gray-400">
-          Total {users.length} pengguna terdaftar
-        </p>
 
         {/* Tabel */}
         <UserTable

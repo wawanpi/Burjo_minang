@@ -9,7 +9,7 @@ export default function OwnerLayout({ title, children }: { title?: string; child
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     return (
-        <div className="min-h-screen bg-gray-50 flex font-sans">
+        <div className="min-h-screen bg-bm-cream flex font-sans">
             {title && <Head title={`${title} — ${panelLabel}`} />}
 
             {/* Backdrop saat Sidebar Terbuka (Mobile) */}
@@ -37,17 +37,20 @@ export default function OwnerLayout({ title, children }: { title?: string; child
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                             </svg>
                         </button>
-                        <h1 className="text-lg lg:text-xl font-serif font-bold text-gray-900 tracking-tight drop-shadow-sm">
-                            {title || "Dashboard"}
-                        </h1>
+                        <div className="flex items-center gap-2.5">
+                            <span className="hidden sm:inline text-bm-gold-500 text-base leading-none select-none">✦</span>
+                            <h1 className="text-xl lg:text-[26px] font-serif font-bold text-bm-charcoal-900 tracking-tight leading-none">
+                                {title || "Dashboard"}
+                            </h1>
+                        </div>
                     </div>
                     <div className="flex items-center gap-4">
-                        <div className="hidden sm:flex items-center gap-4 px-4 py-1.5 bg-white/50 rounded-full border border-white shadow-sm">
-                            <span className="text-[10px] text-gray-500 font-bold tracking-[0.15em] uppercase">
+                        <div className="hidden sm:flex items-center gap-3 px-4 py-1.5 bg-white/60 rounded-full border border-black/[0.06] shadow-sm">
+                            <span className="bm-eyebrow tracking-[0.15em]">
                                 {panelLabel}
                             </span>
-                            <div className="w-1 h-1 rounded-full bg-gray-300" />
-                            <span className="text-xs text-gray-600 font-medium">
+                            <span className="w-1.5 h-1.5 rounded-full bg-bm-gold-400 shadow-[0_0_6px_rgba(250,204,21,0.6)]" />
+                            <span className="text-xs text-bm-charcoal-800 font-medium">
                                 {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                             </span>
                         </div>
