@@ -33,6 +33,26 @@ class ProfileUpdateRequest extends FormRequest
                 Rule::unique(User::class)->ignore($this->user()->id),
                 'regex:/^(?:\+62|62|0)8[1-9][0-9]{7,11}$/',
             ],
+            'foto_profil' => [
+                'nullable',
+                'image',
+                'mimes:jpg,jpeg,png,webp',
+                'max:7168', // 7MB
+            ],
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'foto_profil.max' => 'Ukuran foto maksimal adalah 7MB.',
+            'foto_profil.image' => 'File harus berupa gambar.',
+            'foto_profil.mimes' => 'Format foto harus berupa JPG, JPEG, PNG, atau WEBP.',
         ];
     }
 }
