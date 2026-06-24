@@ -1,12 +1,26 @@
 // resources/js/Pages/Customer/Menu.tsx
 import React, { useState, useMemo, useEffect } from 'react';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import CustomerLayout from '@/Layouts/CustomerLayout';
 
 // ─── Shared Components ───────────────────────────────────────────────────────
 import Divider from '@/Components/Frontend/Divider';
 import Footer from '@/Components/Frontend/Footer';
 import useScrollReveal from '@/Components/Frontend/useScrollReveal';
+
+// ─── Deklarasi window.snap untuk TypeScript ──────────────────────────────────
+declare global {
+    interface Window {
+        snap?: {
+            pay: (token: string, options: {
+                onSuccess?:  (result: any) => void;
+                onPending?:  (result: any) => void;
+                onError?:    (result: any) => void;
+                onClose?:    ()           => void;
+            }) => void;
+        };
+    }
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface Menu {
@@ -45,12 +59,14 @@ function MenuCard({
     qty,
     onAdd,
     onUpdate,
+    isStoreOpen,
 }: {
     menu: Menu;
     delay: number;
     qty: number;
     onAdd: () => void;
     onUpdate: (delta: number) => void;
+    isStoreOpen: boolean;
 }) {
     const ref = useScrollReveal();
 
@@ -123,7 +139,14 @@ function MenuCard({
                         </div>
 
                         {/* Add to Cart Control */}
-                        {menu.stok <= 0 ? (
+                        {!isStoreOpen ? (
+                            <button
+                                disabled
+                                className="w-full py-2.5 bg-gray-100 text-gray-400 font-bold rounded-full text-sm border border-gray-200 cursor-not-allowed transition-all"
+                            >
+                                Toko Tutup
+                            </button>
+                        ) : menu.stok <= 0 ? (
                             <button
                                 disabled
                                 className="w-full py-2.5 bg-gray-100 text-gray-400 font-bold rounded-full text-sm border border-gray-200 cursor-not-allowed transition-all"
@@ -183,6 +206,9 @@ function MenuCard({
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function CustomerMenu({ menus, kategoriList }: Props) {
+    const { props } = usePage();
+    const isStoreOpen = (props as any).is_store_open ?? true;
+
     // ─── State animasi load ──────────────────────────────────────────────────
     const [loaded, setLoaded] = useState(false);
 
@@ -208,6 +234,27 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
     const [jumlahOrang, setJumlahOrang] = useState<number>(1);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [timeError, setTimeError] = useState<string | null>(null);
+
+    // ─── State Pembayaran Digital (Snap.js Popup) ────────────────────────────
+    type PaymentStatus = 'idle' | 'loading' | 'success' | 'pending' | 'error';
+    const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('idle');
+    const [paymentMessage, setPaymentMessage] = useState('');
+
+    // ─── Inject Midtrans Snap.js sekali saat komponen mount ──────────────────
+    useEffect(() => {
+        const snapUrl = import.meta.env.VITE_MIDTRANS_IS_PRODUCTION === 'true'
+            ? 'https://app.midtrans.com/snap/snap.js'
+            : 'https://app.sandbox.midtrans.com/snap/snap.js';
+        const clientKey = import.meta.env.VITE_MIDTRANS_CLIENT_KEY as string;
+
+        if (document.getElementById('midtrans-snap-script')) return; // sudah ada
+
+        const script = document.createElement('script');
+        script.id  = 'midtrans-snap-script';
+        script.src = snapUrl;
+        script.setAttribute('data-client-key', clientKey);
+        document.head.appendChild(script);
+    }, []);
 
     // ─── Kalkulasi waktu minimal ─────────────────────────────────────────────
     const getMinTimeStr = (): string => {
@@ -297,7 +344,28 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
     );
     const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.jumlah, 0), [cart]);
 
-    const handleCheckout = (e: React.FormEvent) => {
+    // ─── Helper: Update status pembayaran di backend ──────────────────────────
+    const updatePaymentStatusBackend = async (orderId: number, status: 'success' | 'pending') => {
+        try {
+            const csrfMeta = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]');
+            const csrfToken = csrfMeta?.content ?? '';
+
+            await fetch(route('customer.payment.status', { order: orderId }), {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify({ status }),
+            });
+        } catch (err) {
+            console.error('[Snap Callback] Gagal update status di backend:', err);
+        }
+    };
+
+    // ─── Handle Checkout: Fetch snap_token → Buka Popup Midtrans ─────────────
+    const handleCheckout = async (e: React.FormEvent) => {
         e.preventDefault();
         if (cart.length === 0) return;
 
@@ -310,6 +378,8 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
         }
 
         setIsSubmitting(true);
+        setPaymentStatus('loading');
+        setPaymentMessage('');
 
         const payload = {
             items: cart.map((item) => ({
@@ -323,17 +393,92 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
             jumlah_orang: tipeLayanan === 'dine_in' ? jumlahOrang : null,
         };
 
-        router.post(route('customer.checkout'), payload, {
-            onSuccess: () => {
-                setCart([]);
-                setShowCart(false);
+        try {
+            // Ambil CSRF token
+            const csrfMeta = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]');
+            const csrfToken = csrfMeta?.content ?? '';
+
+            // Kirim request AJAX ke backend untuk generate snap_token
+            const response = await fetch(route('customer.checkout'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                const errMsg = data?.message ?? 'Terjadi kesalahan saat memproses pesanan.';
+                setPaymentStatus('error');
+                setPaymentMessage(errMsg);
                 setIsSubmitting(false);
-            },
-            onError: () => {
+                return;
+            }
+
+            const snapToken = data.snap_token as string;
+            const orderId   = data.order_id   as number;
+
+            // Pastikan Snap.js sudah dimuat
+            if (!window.snap) {
+                setPaymentStatus('error');
+                setPaymentMessage('Midtrans Snap.js belum termuat. Pastikan koneksi internet stabil dan coba lagi.');
                 setIsSubmitting(false);
-                alert('Gagal memproses checkout. Silakan periksa kembali keranjang Anda.');
-            },
-        });
+                return;
+            }
+
+            setIsSubmitting(false);
+            setPaymentStatus('idle');
+
+            // Tutup modal keranjang agar tidak bertumpuk dengan popup Midtrans
+            setShowCart(false);
+
+            // ── Buka Popup Midtrans Snap ─────────────────────────────────────
+            window.snap.pay(snapToken, {
+                onSuccess: async (result) => {
+                    console.log('[Midtrans] Pembayaran Sukses:', result);
+                    await updatePaymentStatusBackend(orderId, 'success');
+                    setPaymentStatus('success');
+                    setPaymentMessage('Pembayaran berhasil! Pesanan Anda sedang diproses oleh dapur.');
+                    // Reset keranjang & form
+                    setCart([]);
+                    setShowCart(false);
+                    setWaktuKedatangan('');
+                    setJumlahOrang(1);
+                },
+                onPending: async (result) => {
+                    console.log('[Midtrans] Pembayaran Pending:', result);
+                    await updatePaymentStatusBackend(orderId, 'pending');
+                    setPaymentStatus('pending');
+                    setPaymentMessage('Pesanan Anda sudah tercatat. Silakan segera selesaikan pembayaran agar pesanan diproses.');
+                    setCart([]);
+                    setShowCart(false);
+                },
+                onError: (result) => {
+                    console.error('[Midtrans] Pembayaran Gagal:', result);
+                    setPaymentStatus('error');
+                    setPaymentMessage('Pembayaran gagal atau ditolak. Silakan coba kembali atau pilih metode pembayaran lain.');
+                },
+                onClose: async () => {
+                    // User menutup popup sebelum selesai bayar
+                    console.log('[Midtrans] Popup ditutup sebelum pembayaran selesai');
+                    await updatePaymentStatusBackend(orderId, 'pending');
+                    setPaymentStatus('pending');
+                    setPaymentMessage('Pembayaran belum diselesaikan. Pesanan Anda tetap tersimpan — silakan selesaikan pembayaran melalui halaman Pesanan Saya.');
+                    setCart([]);
+                    setShowCart(false);
+                },
+            });
+
+        } catch (networkError) {
+            console.error('[Checkout] Network error:', networkError);
+            setPaymentStatus('error');
+            setPaymentMessage('Gagal terhubung ke server. Periksa koneksi internet Anda.');
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -429,6 +574,12 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                     MAIN CONTENT AREA
                     ═══════════════════════════════════════════════════════════════════ */}
                 <div className="flex-1 bg-gray-50 relative overflow-hidden">
+                    {!isStoreOpen && (
+                        <div className="bg-red-600 text-white text-center py-4 px-6 font-bold tracking-widest shadow-md">
+                            🏪 MAAF, BURJO MINANG SEDANG TUTUP
+                        </div>
+                    )}
+                    
                     {/* Subtle pattern overlay — identik Landing Page About Section */}
                     <div
                         className="absolute inset-0 opacity-[0.02]"
@@ -498,6 +649,7 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                                         qty={qty}
                                         onAdd={() => addToCart(menu)}
                                         onUpdate={(delta) => updateQuantity(menu.id, delta)}
+                                        isStoreOpen={isStoreOpen}
                                     />
                                 );
                             })}
@@ -875,20 +1027,108 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                                         type="submit"
                                         form="checkout-form"
                                         className={`w-full py-4 rounded-full text-white font-semibold tracking-wide transition-all duration-300 shadow-xl ${
-                                            timeError || isSubmitting
+                                            timeError || isSubmitting || !isStoreOpen
                                                 ? 'bg-gray-400 cursor-not-allowed shadow-none'
                                                 : 'bg-[#990000] hover:bg-[#7a0000] hover:shadow-[#990000]/40 hover:scale-105 active:scale-[0.98]'
                                         }`}
-                                        disabled={isSubmitting || !!timeError}
+                                        disabled={isSubmitting || !!timeError || !isStoreOpen}
                                     >
-                                        {isSubmitting
-                                            ? 'Memproses Pesanan...'
-                                            : timeError
-                                              ? 'Perbaiki Waktu Kedatangan'
-                                              : 'Lanjutkan ke Pembayaran'}
+                                        {!isStoreOpen
+                                            ? 'Toko Sedang Tutup'
+                                            : isSubmitting
+                                                ? 'Memproses Pesanan...'
+                                                : timeError
+                                                  ? 'Perbaiki Waktu Kedatangan'
+                                                  : 'Lanjutkan ke Pembayaran'}
                                     </button>
                                 </div>
                             )}
+                        </div>
+                    </div>
+                )}
+
+                {/* ═══════════════════════════════════════════════════════════════════
+                    PAYMENT STATUS NOTIFICATION — Modal Overlay
+                    Muncul setelah popup Midtrans Snap.js ditutup (sukses/pending/error)
+                    ═══════════════════════════════════════════════════════════════════ */}
+                {paymentStatus !== 'idle' && paymentStatus !== 'loading' && (
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center font-sans">
+                        {/* Backdrop */}
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+
+                        {/* Notification Card */}
+                        <div className="relative w-[90%] max-w-sm bg-white rounded-3xl shadow-2xl p-8 text-center animate-slide-up">
+                            {/* Icon */}
+                            <div className={`w-20 h-20 rounded-full mx-auto mb-5 flex items-center justify-center ${
+                                paymentStatus === 'success'
+                                    ? 'bg-green-100'
+                                    : paymentStatus === 'pending'
+                                      ? 'bg-yellow-100'
+                                      : 'bg-red-100'
+                            }`}>
+                                {paymentStatus === 'success' && (
+                                    <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                )}
+                                {paymentStatus === 'pending' && (
+                                    <svg className="w-10 h-10 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                )}
+                                {paymentStatus === 'error' && (
+                                    <svg className="w-10 h-10 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                )}
+                            </div>
+
+                            {/* Title */}
+                            <h3 className={`font-serif font-bold text-xl mb-2 ${
+                                paymentStatus === 'success'
+                                    ? 'text-green-700'
+                                    : paymentStatus === 'pending'
+                                      ? 'text-yellow-700'
+                                      : 'text-red-700'
+                            }`}>
+                                {paymentStatus === 'success' && 'Pembayaran Berhasil!'}
+                                {paymentStatus === 'pending' && 'Menunggu Pembayaran'}
+                                {paymentStatus === 'error' && 'Pembayaran Gagal'}
+                            </h3>
+
+                            {/* Message */}
+                            <p className="text-gray-600 text-sm leading-relaxed mb-6">
+                                {paymentMessage}
+                            </p>
+
+                            {/* Action Buttons */}
+                            <div className="space-y-3">
+                                {(paymentStatus === 'success' || paymentStatus === 'pending') && (
+                                    <button
+                                        onClick={() => {
+                                            setPaymentStatus('idle');
+                                            setPaymentMessage('');
+                                            router.visit(route('customer.orders'));
+                                        }}
+                                        className="w-full py-3.5 bg-[#990000] hover:bg-[#7a0000] text-white font-semibold rounded-full transition-all duration-300 shadow-xl shadow-[#990000]/20 hover:scale-105 active:scale-[0.98]"
+                                    >
+                                        Lihat Pesanan Saya
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => {
+                                        setPaymentStatus('idle');
+                                        setPaymentMessage('');
+                                    }}
+                                    className={`w-full py-3.5 rounded-full font-semibold transition-all duration-300 ${
+                                        paymentStatus === 'error'
+                                            ? 'bg-[#990000] hover:bg-[#7a0000] text-white shadow-xl shadow-[#990000]/20 hover:scale-105 active:scale-[0.98]'
+                                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    {paymentStatus === 'error' ? 'Coba Lagi' : 'Tutup'}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}

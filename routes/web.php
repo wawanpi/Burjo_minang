@@ -85,6 +85,9 @@ Route::middleware(['auth', 'role:owner,kasir'])
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
         Route::post('/pos', [PosController::class, 'storeOrderTunai'])->name('pos.store');
         Route::post('/pos/digital', [PosController::class, 'storeOrderDigital'])->name('pos.digital');
+        
+        // Toggle Buka/Tutup Toko
+        Route::post('/store/toggle-status', [PosController::class, 'toggleStoreStatus'])->name('store.toggle');
     });
 
 
@@ -101,11 +104,24 @@ Route::middleware(['auth', 'role:pelanggan'])
 
         Route::get('/orders', [CustomerOrderController::class, 'orders'])->name('orders');
         Route::post('/orders/{order}/review', [CustomerOrderController::class, 'storeReview'])->name('reviews.store');
+        Route::patch('/orders/{order}/payment-status', [CustomerOrderController::class, 'updatePaymentStatus'])->name('payment.status');
     });
 
 
 // ╔══════════════════════════════════════════════════════════════════════════╗
-// ║  4. ROUTING CERDAS ROOT (/)                                            ║
+// ║  4. ROUTE PROFIL (Semua Role)                                          ║
+// ║  Setiap user yang login bisa mengedit profilnya sendiri                ║
+// ╚══════════════════════════════════════════════════════════════════════════╝
+use App\Http\Controllers\ProfileController;
+
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+});
+
+
+// ╔══════════════════════════════════════════════════════════════════════════╗
+// ║  5. ROUTING CERDAS ROOT (/)                                            ║
 // ║  Redirect otomatis berdasarkan role user yang sedang login              ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
 Route::get('/', function () {

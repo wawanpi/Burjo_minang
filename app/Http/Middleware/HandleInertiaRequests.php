@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
 
@@ -37,6 +38,9 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+
+            // Status Buka/Tutup Toko
+            'is_store_open' => Cache::get('is_store_open', true),
             
             // ✅ Flash message tersedia di semua halaman via usePage().props.flash
             'flash' => [

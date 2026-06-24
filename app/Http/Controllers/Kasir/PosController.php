@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
@@ -25,6 +26,17 @@ use Inertia\Inertia;
  */
 class PosController extends Controller
 {
+    /**
+     * Toggle status Buka/Tutup Toko.
+     */
+    public function toggleStoreStatus(Request $request)
+    {
+        $currentStatus = Cache::get('is_store_open', true);
+        Cache::forever('is_store_open', !$currentStatus);
+
+        $statusText = !$currentStatus ? 'buka' : 'tutup';
+        return redirect()->back()->with('success', "Status toko berhasil diubah menjadi {$statusText}.");
+    }
     /**
      * Menampilkan halaman Point of Sale (POS) dengan daftar menu yang tersedia.
      *

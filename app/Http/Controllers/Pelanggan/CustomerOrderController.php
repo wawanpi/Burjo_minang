@@ -12,7 +12,9 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 
 /**
  * CustomerOrderController — Menangani seluruh alur pemesanan pelanggan online.
@@ -65,6 +67,12 @@ class CustomerOrderController extends Controller
      */
     public function store(Request $request)
     {
+        if (!Cache::get('is_store_open', true)) {
+            throw ValidationException::withMessages([
+                'checkout' => 'Maaf, Burjo Minang sedang tutup. Anda tidak dapat melakukan pemesanan saat ini.'
+            ]);
+        }
+
         $validated = $request->validate([
             'items'                 => ['required', 'array', 'min:1'],
             'items.*.menu_id'       => ['required', 'exists:menus,id', 'distinct'],
@@ -156,15 +164,15 @@ class CustomerOrderController extends Controller
 
             DB::commit();
 
-            // ── Integrasi Midtrans Snap: Generate Payment URL ───────────
+            // ── Integrasi Midtrans Snap: Generate Snap Token ───────────
             \Midtrans\Config::$serverKey    = env('MIDTRANS_SERVER_KEY');
             \Midtrans\Config::$isProduction = env('MIDTRANS_IS_PRODUCTION', false);
             \Midtrans\Config::$isSanitized  = true;
             \Midtrans\Config::$is3ds        = true;
 
-            // Buat item details untuk Midtrans
+            // Buat item details untuk Midtrans (gunakan harga aman dari $secureItems)
             $itemDetails = [];
-            foreach ($validated['items'] as $item) {
+            foreach ($secureItems as $item) {
                 $menuData = Menu::find($item['menu_id']);
                 $itemDetails[] = [
                     'id'       => (string) $item['menu_id'],
@@ -214,7 +222,16 @@ class CustomerOrderController extends Controller
                     'transaction_id' => $params['transaction_details']['order_id'],
                 ]);
 
-                // Redirect pelanggan langsung ke halaman pembayaran Midtrans Snap
+                // ── Response berdasarkan tipe request ─────────────────────
+                // AJAX (fetch dari Snap.js popup) → kembalikan JSON
+                // Non-AJAX (fallback)             → redirect seperti sebelumnya
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'snap_token' => $snapToken,
+                        'order_id'   => $order->id,
+                    ]);
+                }
+
                 return Inertia::location($paymentUrl);
 
             } catch (\Exception $midtransError) {
@@ -223,12 +240,83 @@ class CustomerOrderController extends Controller
                     'error'    => $midtransError->getMessage(),
                 ]);
 
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'message' => 'Gagal menghubungi Payment Gateway: ' . $midtransError->getMessage(),
+                    ], 500);
+                }
+
                 return redirect()->back()->with('error', 'Gagal menghubungi Payment Gateway: ' . $midtransError->getMessage());
             }
         } catch (\Exception $e) {
             DB::rollBack();
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Gagal memproses pesanan: ' . $e->getMessage(),
+                ], 500);
+            }
+
             return redirect()->back()->with('error', 'Gagal memproses pesanan: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Update status pesanan berdasarkan callback Snap.js dari frontend.
+     *
+     * Method ini dipanggil via AJAX setelah popup Midtrans Snap ditutup.
+     * Berfungsi sebagai update UI realtime — webhook Midtrans tetap
+     * menjadi sumber kebenaran utama (source of truth).
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \App\Models\Order         $order
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updatePaymentStatus(Request $request, Order $order)
+    {
+        // Pastikan order ini milik user yang sedang login
+        if ($order->user_id !== auth()->id()) {
+            return response()->json(['message' => 'Aksi tidak diizinkan.'], 403);
+        }
+
+        $validated = $request->validate([
+            'status' => ['required', 'in:success,pending'],
+        ]);
+
+        $payment = Payment::where('order_id', $order->id)->first();
+
+        // Guard: Jangan update jika status sudah final (batal/selesai)
+        // Biarkan webhook Midtrans yang menangani status final
+        if (in_array($order->status_pesanan, ['batal', 'selesai'])) {
+            return response()->json([
+                'message' => 'Pesanan sudah dalam status final.',
+                'status'  => $order->status_pesanan,
+            ]);
+        }
+
+        if ($validated['status'] === 'success') {
+            $order->update(['status_pesanan' => 'diproses']);
+            if ($payment) {
+                $payment->update(['status_pembayaran' => 'lunas']);
+            }
+        } elseif ($validated['status'] === 'pending') {
+            // Tetap di 'menunggu_pembayaran' — jangan ubah ke status lain
+            // Webhook Midtrans akan mengupdate ketika pembayaran masuk
+            $order->update(['status_pesanan' => 'menunggu_pembayaran']);
+            if ($payment) {
+                $payment->update(['status_pembayaran' => 'pending']);
+            }
+        }
+
+        Log::info('Snap.js Callback: Status pesanan diperbarui dari frontend', [
+            'order_id' => $order->id,
+            'status'   => $validated['status'],
+        ]);
+
+        return response()->json([
+            'message' => 'Status berhasil diperbarui.',
+            'status'  => $order->status_pesanan,
+        ]);
     }
 
     /**
