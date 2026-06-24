@@ -178,17 +178,25 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
                     </div>
                 </div>
 
-                <Link
-                    href="/logout"
-                    method="post"
-                    as="button"
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-bm-red-500 hover:bg-bm-red-500/10 hover:text-red-300 transition-all duration-300 text-sm font-semibold border border-transparent hover:border-bm-red-500/20"
-                >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Keluar
-                </Link>
+                <div className="flex gap-2">
+                    <Link
+                        href={route('profile.edit')}
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-bm-gold-400 hover:bg-bm-gold-400/10 hover:text-bm-gold-300 transition-all duration-300 text-sm font-semibold border border-transparent hover:border-bm-gold-400/20"
+                    >
+                        Profil
+                    </Link>
+                    <Link
+                        href="/logout"
+                        method="post"
+                        as="button"
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-bm-red-500 hover:bg-bm-red-500/10 hover:text-red-300 transition-all duration-300 text-sm font-semibold border border-transparent hover:border-bm-red-500/20"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Keluar
+                    </Link>
+                </div>
             </div>
         </aside>
     );

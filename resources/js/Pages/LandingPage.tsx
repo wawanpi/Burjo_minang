@@ -181,7 +181,7 @@ function HeroSection() {
                         </svg>
                     </a>
                     <Link
-                        href={route('register')}
+                        href={route('login')}
                         className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded-full font-semibold text-sm tracking-wide transition-all duration-300 hover:scale-105 backdrop-blur-sm"
                     >
                         Pesan Online

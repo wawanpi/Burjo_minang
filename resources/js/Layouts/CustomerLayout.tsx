@@ -96,7 +96,7 @@ export default function CustomerLayout({ children, title }: Props) {
               
               {isDropdownOpen && (
                 <div className="absolute right-0 top-full mt-2 w-48 bg-gray-950/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/10 py-1.5 z-50 animate-toast-in">
-                  <Link href="#" className="block px-4 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors rounded-xl mx-1.5">Profil</Link>
+                  <Link href={route('profile.edit')} className="block px-4 py-2.5 text-sm font-medium text-white/80 hover:bg-white/10 hover:text-white transition-colors rounded-xl mx-1.5">Profil</Link>
                   <Link href={route('logout')} method="post" as="button" className="block w-full text-left px-4 py-2.5 text-sm font-medium text-[#ff4444] hover:bg-[#990000]/20 transition-colors rounded-xl mx-1.5">Logout</Link>
                 </div>
               )}
@@ -141,18 +141,21 @@ export default function CustomerLayout({ children, title }: Props) {
           </div>
           <span className={`text-[10px] font-extrabold tracking-wide transition-colors duration-300 ${isDropdownOpen ? 'text-[#c70024]' : 'text-gray-400'}`}>Profil</span>
           
-          {/* Dropdown Mobile Profil */}
-          {isDropdownOpen && (
-            <div className="absolute bottom-16 right-0 w-44 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 animate-toast-in z-50 overflow-hidden">
-              <div className="px-4 py-2.5 border-b border-gray-100 mb-1 text-left">
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Hai,</p>
-                <p className="text-sm font-extrabold text-gray-900 truncate">{auth.user.name}</p>
-              </div>
-              <Link href={route('logout')} method="post" as="button" className="w-full text-left px-4 py-2.5 text-sm font-bold text-[#c70024] hover:bg-red-50 transition-colors">
-                🚪 Logout Keluar
-              </Link>
-            </div>
-          )}
+              {/* Dropdown Mobile Profil */}
+              {isDropdownOpen && (
+                <div className="absolute bottom-16 right-0 w-44 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 animate-toast-in z-50 overflow-hidden">
+                  <div className="px-4 py-2.5 border-b border-gray-100 mb-1 text-left">
+                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Hai,</p>
+                    <p className="text-sm font-extrabold text-gray-900 truncate">{auth.user.name}</p>
+                  </div>
+                  <Link href={route('profile.edit')} className="block w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                    👤 Profil Saya
+                  </Link>
+                  <Link href={route('logout')} method="post" as="button" className="block w-full text-left px-4 py-2.5 text-sm font-bold text-[#c70024] hover:bg-red-50 transition-colors">
+                    🚪 Logout Keluar
+                  </Link>
+                </div>
+              )}
         </button>
       </nav>
     </div>
