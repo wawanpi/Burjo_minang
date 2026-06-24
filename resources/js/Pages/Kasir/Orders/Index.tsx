@@ -210,7 +210,7 @@ export default function OrderIndex({ orders, filters }: Props) {
 
         router.patch(`/kasir/orders/${order.id}/status`, {
             status_pesanan: newStatus,
-        }, { preserveScroll: true });
+        }, { preserveScroll: true, preserveState: true });
     };
 
     const handlePrintNota = (orderId: number) => {

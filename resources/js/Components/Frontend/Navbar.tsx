@@ -59,7 +59,7 @@ export default function Navbar({
             <div className="max-w-7xl mx-auto px-6 lg:px-8">
                 <div className="flex items-center justify-between h-20">
                     {/* Logo — Premium Typographic */}
-                    <a href={backToHome ? '/' : '#beranda'} className="flex items-center gap-3 group">
+                    <Link href={backToHome ? '/' : '#beranda'} className="flex items-center gap-3 group">
                         <div className="flex flex-col items-start">
                             <span className="font-serif text-xl sm:text-2xl font-bold text-white tracking-wide leading-none">
                                 BURJO MINANG
@@ -72,7 +72,7 @@ export default function Navbar({
                                 <span className="block h-px w-5 bg-yellow-400/60" />
                             </div>
                         </div>
-                    </a>
+                    </Link>
 
                     {/* Desktop Links */}
                     <div className="hidden md:flex items-center gap-1">
@@ -88,13 +88,13 @@ export default function Navbar({
                             </Link>
                         ) : (
                             links.map((link) => (
-                                <a
+                                <Link
                                     key={link.href}
                                     href={link.href}
                                     className="px-4 py-2 rounded-full text-sm font-medium tracking-wide text-white/70 hover:text-white hover:bg-white/10 transition-all duration-300"
                                 >
                                     {link.label}
-                                </a>
+                                </Link>
                             ))
                         )}
 
@@ -164,14 +164,14 @@ export default function Navbar({
                         </Link>
                     ) : (
                         links.map((link) => (
-                            <a
+                            <Link
                                 key={link.href}
                                 href={link.href}
                                 onClick={() => setMobileOpen(false)}
                                 className="block px-4 py-3 rounded-xl text-white/70 hover:text-white hover:bg-white/10 text-sm font-medium transition-colors"
                             >
                                 {link.label}
-                            </a>
+                            </Link>
                         ))
                     )}
 

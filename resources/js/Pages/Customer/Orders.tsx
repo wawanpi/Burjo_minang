@@ -141,7 +141,9 @@ export default function CustomerOrders({ orders, tab }: Props) {
       onError: () => {
         setIsSubmittingReview(false);
         alert("Terjadi kesalahan saat mengirim ulasan.");
-      }
+      },
+      preserveScroll: true,
+      preserveState: true,
     });
   };
 

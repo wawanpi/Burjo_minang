@@ -306,6 +306,7 @@ export default function PosIndex({ menus, kategoriList }: Props) {
             },
             onError: () => setIsProcessing(false),
             preserveScroll: true,
+            preserveState: true,
         });
     };
 

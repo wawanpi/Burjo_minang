@@ -106,18 +106,22 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
             }, {
                 forceFormData: true,
                 onSuccess: () => closeModal(),
+                preserveScroll: true,
+                preserveState: true,
             });
         } else {
             post('/kasir/menus', {
                 forceFormData: true,
                 onSuccess: () => closeModal(),
+                preserveScroll: true,
+                preserveState: true,
             });
         }
     };
 
     const handleDelete = (menu: Menu) => {
         if (!window.confirm(`Hapus menu "${menu.nama_menu}"? Tindakan ini tidak dapat dibatalkan.`)) return;
-        router.delete(`/kasir/menus/${menu.id}`, { preserveScroll: true });
+        router.delete(`/kasir/menus/${menu.id}`, { preserveScroll: true, preserveState: true });
     };
 
     // ─── Format Rupiah ─────────────────────────────────────────

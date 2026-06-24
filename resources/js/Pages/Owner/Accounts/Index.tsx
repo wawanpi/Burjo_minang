@@ -60,10 +60,14 @@ export default function Index({ users }: Props) {
     if (editingUser) {
       put(`/owner/accounts/${editingUser.id}`, {
         onSuccess: () => handleCloseModal(),
+        preserveScroll: true,
+        preserveState: true,
       });
     } else {
       post('/owner/accounts', {
         onSuccess: () => handleCloseModal(),
+        preserveScroll: true,
+        preserveState: true,
       });
     }
   };
@@ -74,6 +78,7 @@ export default function Index({ users }: Props) {
     // Delete data via Inertia
     router.delete(`/owner/accounts/${user.id}`, {
       preserveScroll: true,
+      preserveState: true,
     });
   };
 

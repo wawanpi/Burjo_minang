@@ -175,7 +175,7 @@ export default function LoginPage({ status }: { status?: string }) {
                         </label>
                         <div className="text-sm">
                             <span className="text-gray-400">Setuju dengan</span> 
-                            <a href="#" className="text-red-600 font-bold hover:underline ml-1">Ketentuan & Syarat</a>
+                            <Link href="#" className="text-red-600 font-bold hover:underline ml-1">Ketentuan & Syarat</Link>
                         </div>
                     </div>
 

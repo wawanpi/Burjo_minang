@@ -1,5 +1,5 @@
 import { ReactNode, useState } from "react";
-import { Head, usePage } from "@inertiajs/react";
+import { Head, usePage, router } from "@inertiajs/react";
 import Sidebar from "@/Components/Owner/Sidebar";
 
 export default function OwnerLayout({ title, children }: { title?: string; children: ReactNode }) {
@@ -7,6 +7,20 @@ export default function OwnerLayout({ title, children }: { title?: string; child
     const userRole = (props.auth as any)?.user?.role;
     const panelLabel = userRole === 'owner' ? 'Owner Panel' : 'Kasir Panel';
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    
+    const initialStoreOpen = (props as any).is_store_open ?? true;
+    const [isOpen, setIsOpen] = useState(initialStoreOpen);
+
+    const handleToggle = () => {
+        // Optimistic UI update
+        setIsOpen(!isOpen);
+        
+        router.post(route('kasir.store.toggle'), {}, {
+            preserveScroll: true,
+            preserveState: true,
+            onError: () => setIsOpen(isOpen) // Kembalikan state jika gagal
+        });
+    };
 
     return (
         <div className="min-h-screen bg-bm-cream flex font-sans">
@@ -45,6 +59,34 @@ export default function OwnerLayout({ title, children }: { title?: string; child
                         </div>
                     </div>
                     <div className="flex items-center gap-4">
+                        {/* Tombol Toggle Buka/Tutup Toko (Modern Switch) */}
+                        <div className="flex items-center gap-3 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
+                            <span 
+                                className={`text-xs font-bold tracking-wider uppercase ${
+                                    isOpen ? 'text-emerald-600' : 'text-rose-600'
+                                }`}
+                            >
+                                {isOpen ? 'TOKO BUKA' : 'TOKO TUTUP'}
+                            </span>
+                            
+                            <button
+                                onClick={handleToggle}
+                                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                                    isOpen ? 'bg-emerald-500' : 'bg-gray-300'
+                                }`}
+                                role="switch"
+                                aria-checked={isOpen}
+                            >
+                                <span className="sr-only">Toggle store status</span>
+                                <span
+                                    aria-hidden="true"
+                                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                                        isOpen ? 'translate-x-5' : 'translate-x-0'
+                                    }`}
+                                />
+                            </button>
+                        </div>
+
                         <div className="hidden sm:flex items-center gap-3 px-4 py-1.5 bg-white/60 rounded-full border border-black/[0.06] shadow-sm">
                             <span className="bm-eyebrow tracking-[0.15em]">
                                 {panelLabel}
