@@ -76,6 +76,10 @@ class PosController extends Controller
      */
     public function storeOrderTunai(Request $request)
     {
+        if (!\Illuminate\Support\Facades\Cache::get('is_store_open', true)) {
+            return response()->json(['message' => 'Maaf, sistem kasir dikunci karena toko berstatus tutup.'], 400);
+        }
+
         $validated = $request->validate([
             'cart_items'            => ['required', 'array', 'min:1'],
             'cart_items.*.menu_id'  => ['required', 'exists:menus,id', 'distinct'],
@@ -176,6 +180,10 @@ class PosController extends Controller
      */
     public function storeOrderDigital(Request $request)
     {
+        if (!\Illuminate\Support\Facades\Cache::get('is_store_open', true)) {
+            return response()->json(['message' => 'Maaf, sistem kasir dikunci karena toko berstatus tutup.'], 400);
+        }
+
         $validated = $request->validate([
             'cart_items'            => ['required', 'array', 'min:1'],
             'cart_items.*.menu_id'  => ['required', 'exists:menus,id', 'distinct'],

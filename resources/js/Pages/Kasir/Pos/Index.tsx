@@ -42,7 +42,8 @@ interface Props {
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 export default function PosIndex({ menus, kategoriList }: Props) {
-    const { flash, errors } = usePage().props as any;
+    const { flash, errors, is_store_open } = usePage().props as any;
+    const isStoreOpen = is_store_open ?? true;
     const [selectedKategori, setSelectedKategori] = useState('Semua');
     const [cart, setCart] = useState<CartItem[]>([]);
     
@@ -659,42 +660,50 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                     {/* Area Tombol Bottom (Sticky) */}
                     <div className="p-4 border-t border-black/[0.05] bg-white mt-auto shrink-0 z-10 shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.06)]">
                         {/* Tombol Final Checkout */}
-                        <button
-                            onClick={handleCheckout}
-                            disabled={
-                                cart.length === 0 ||
-                                isProcessing ||
-                                (metodePembayaran === 'Tunai' && !isUangCukup) ||
-                                digitalStatus === 'loading'
-                            }
-                            className={`w-full py-3.5 text-[15px] font-bold rounded-full shadow-soft transition-all duration-200 inline-flex items-center justify-center gap-2 text-white disabled:bg-none disabled:bg-bm-gold-300/60 disabled:text-bm-charcoal-700 disabled:shadow-none disabled:cursor-not-allowed hover:shadow-elevated hover:-translate-y-0.5 active:translate-y-0 ${
-                                metodePembayaran === 'Tunai' ? 'bg-gradient-to-r from-bm-red-500 to-bm-red-700' : 'bg-gradient-to-r from-bm-charcoal-700 to-bm-charcoal-900'
-                            }`}
-                        >
-                            {isProcessing ? (
-                                <>
-                                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                                    </svg>
-                                    Menghubungi Midtrans...
-                                </>
-                            ) : metodePembayaran === 'Tunai' ? (
-                                <>
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                    Proses Pembayaran Tunai
-                                </>
-                            ) : (
-                                <>
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8H2a1 1 0 00-1 1v5a1 1 0 001 1h3m10-11h3a1 1 0 011 1v5a1 1 0 01-1 1h-3m-6.5 0H8.5" />
-                                    </svg>
-                                    Buka Pembayaran {metodePembayaran}
-                                </>
+                        <div className="flex flex-col gap-2">
+                            <button
+                                onClick={handleCheckout}
+                                disabled={
+                                    !isStoreOpen ||
+                                    cart.length === 0 ||
+                                    isProcessing ||
+                                    (metodePembayaran === 'Tunai' && !isUangCukup) ||
+                                    digitalStatus === 'loading'
+                                }
+                                className={`w-full py-3.5 text-[15px] font-bold rounded-full shadow-soft transition-all duration-200 inline-flex items-center justify-center gap-2 text-white disabled:bg-none disabled:bg-gray-200 disabled:text-gray-500 disabled:shadow-none disabled:cursor-not-allowed hover:shadow-elevated hover:-translate-y-0.5 active:translate-y-0 ${
+                                    metodePembayaran === 'Tunai' ? 'bg-gradient-to-r from-bm-red-500 to-bm-red-700' : 'bg-gradient-to-r from-bm-charcoal-700 to-bm-charcoal-900'
+                                }`}
+                            >
+                                {isProcessing ? (
+                                    <>
+                                        <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                        </svg>
+                                        Menghubungi Midtrans...
+                                    </>
+                                ) : metodePembayaran === 'Tunai' ? (
+                                    <>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                        Proses Pembayaran Tunai
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8H2a1 1 0 00-1 1v5a1 1 0 001 1h3m10-11h3a1 1 0 011 1v5a1 1 0 01-1 1h-3m-6.5 0H8.5" />
+                                        </svg>
+                                        Buka Pembayaran {metodePembayaran}
+                                    </>
+                                )}
+                            </button>
+                            {!isStoreOpen && (
+                                <p className="text-center text-xs text-red-600 font-medium tracking-wide animate-fade-in">
+                                    Toko Tutup. Transaksi dihentikan.
+                                </p>
                             )}
-                        </button>
+                        </div>
                     </div>
                 </div>
             </div>

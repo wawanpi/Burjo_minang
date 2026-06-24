@@ -575,8 +575,16 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                     ═══════════════════════════════════════════════════════════════════ */}
                 <div className="flex-1 bg-gray-50 relative overflow-hidden">
                     {!isStoreOpen && (
-                        <div className="bg-red-600 text-white text-center py-4 px-6 font-bold tracking-widest shadow-md">
-                            🏪 MAAF, BURJO MINANG SEDANG TUTUP
+                        <div className="max-w-2xl mx-auto mt-8 mb-6 bg-rose-50 border border-rose-200 rounded-2xl shadow-sm py-6 px-8 relative z-10 mx-6 lg:mx-auto">
+                            <div className="flex flex-col items-center justify-center text-center gap-3">
+                                <span className="text-rose-400 text-xl leading-none">♦</span>
+                                <h3 className="text-2xl md:text-3xl font-serif text-rose-900">
+                                    Mohon Maaf, Kami Sedang Tutup
+                                </h3>
+                                <p className="text-sm text-rose-700 max-w-md">
+                                    Sistem pemesanan dihentikan sementara waktu. Silakan kembali pada jam operasional kami.
+                                </p>
+                            </div>
                         </div>
                     )}
                     
