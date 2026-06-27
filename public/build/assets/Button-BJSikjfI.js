@@ -1,7 +1,0 @@
-import{t as e}from"./app-cmzFoquQ.js";var t=e(),n={primary:`text-white bg-gradient-to-b from-bm-red-500 to-bm-red-600 hover:from-bm-red-600 hover:to-bm-red-700 shadow-soft hover:shadow-elevated hover:-translate-y-0.5`,gold:`text-bm-charcoal-900 bg-bm-gold-400 hover:bg-bm-gold-500 shadow-soft hover:shadow-elevated hover:-translate-y-0.5 font-semibold`,danger:`text-white bg-bm-red-600 hover:bg-bm-red-700 shadow-soft hover:shadow-elevated`,secondary:`text-bm-charcoal-800 bg-white border border-gray-200 hover:bg-bm-cream hover:-translate-y-0.5 shadow-soft`,outline:`border border-gray-300 text-bm-charcoal-800 hover:bg-bm-cream hover:border-gray-400`,ghost:`bg-transparent hover:bg-gray-100 text-gray-700`},r=({variant:e=`primary`,isLoading:r=!1,pill:i=!0,className:a=``,children:o,disabled:s,...c})=>(0,t.jsxs)(`button`,{className:`
-      inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-medium
-      ${i?`rounded-full`:`rounded-lg`}
-      transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-bm-gold-400/60 focus:ring-offset-1
-      disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-soft
-      ${n[e]} ${a}
-    `,disabled:s||r,...c,children:[r&&(0,t.jsxs)(`svg`,{className:`animate-spin h-4 w-4`,fill:`none`,viewBox:`0 0 24 24`,children:[(0,t.jsx)(`circle`,{className:`opacity-25`,cx:`12`,cy:`12`,r:`10`,stroke:`currentColor`,strokeWidth:`4`}),(0,t.jsx)(`path`,{className:`opacity-75`,fill:`currentColor`,d:`M4 12a8 8 0 018-8v8H4z`})]}),o]});export{r as t};
