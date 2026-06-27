@@ -5,22 +5,45 @@ import { Head, useForm, Link } from '@inertiajs/react';
 declare function route(name: string, params?: any, absolute?: boolean): string;
 
 export default function ForgotPassword({ status }: { status?: string }) {
-    // State untuk memicu animasi saat halaman pertama kali dimuat
     const [loaded, setLoaded] = useState(false);
+    const [submitted, setSubmitted] = useState(false);
+    const [emailError, setEmailError] = useState('');
 
     const { data, setData, post, processing, errors } = useForm({
         email: '',
     });
 
     useEffect(() => {
-        // Aktifkan animasi 50ms setelah render pertama
         const timer = setTimeout(() => setLoaded(true), 50);
         return () => clearTimeout(timer);
     }, []);
 
+    // Validasi format email di sisi client
+    const validateEmail = (email: string): boolean => {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email) {
+            setEmailError('Email wajib diisi.');
+            return false;
+        }
+        if (!emailRegex.test(email)) {
+            setEmailError('Format email tidak valid.');
+            return false;
+        }
+        setEmailError('');
+        return true;
+    };
+
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post(route('password.email'));
+
+        // Validasi client-side sebelum kirim ke server
+        if (!validateEmail(data.email)) return;
+
+        post(route('password.email'), {
+            onSuccess: () => {
+                setSubmitted(true); // Cegah double-submit
+            },
+        });
     };
 
     return (
@@ -101,10 +124,15 @@ export default function ForgotPassword({ status }: { status?: string }) {
 
                         {/* Status Message (Pesan sukses kirim email) */}
                         {status && (
-                            <div className={`mb-6 p-4 rounded-lg bg-green-50 border border-green-200 text-sm font-bold text-green-600 transition-all duration-500 ${
+                            <div className={`mb-6 p-4 rounded-lg bg-green-50 border border-green-200 transition-all duration-500 ${
                                 loaded ? 'opacity-100' : 'opacity-0'
                             }`}>
-                                {status}
+                                <div className="flex items-center gap-2">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span className="text-sm font-bold text-green-600">{status}</span>
+                                </div>
                             </div>
                         )}
 
@@ -119,10 +147,16 @@ export default function ForgotPassword({ status }: { status?: string }) {
                                     type="email" 
                                     name="email"
                                     value={data.email}
-                                    onChange={(e) => setData('email', e.target.value)}
+                                    onChange={(e) => {
+                                        setData('email', e.target.value);
+                                        if (emailError) validateEmail(e.target.value);
+                                    }}
                                     required 
                                     autoFocus 
-                                    className="w-full border-b-2 border-t-0 border-l-0 border-r-0 border-gray-200 focus:border-red-600 focus:ring-0 px-0 py-3 bg-transparent text-gray-900 placeholder-gray-300 transition-colors text-lg"
+                                    disabled={submitted}
+                                    className={`w-full border-b-2 border-t-0 border-l-0 border-r-0 border-gray-200 focus:border-red-600 focus:ring-0 px-0 py-3 bg-transparent text-gray-900 placeholder-gray-300 transition-colors text-lg ${
+                                        submitted ? 'cursor-not-allowed opacity-60' : ''
+                                    }`}
                                     placeholder="nama@email.com"
                                 />
                                 
@@ -131,7 +165,17 @@ export default function ForgotPassword({ status }: { status?: string }) {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                                     </svg>
                                 </div>
-                                {errors.email && <p className="text-red-500 text-xs mt-1 font-medium">{errors.email}</p>}
+                                {/* Tampilkan error validasi client-side ATAU server-side */}
+                                {(emailError || errors.email) && (
+                                    <div className="mt-2 p-2.5 rounded-md bg-red-50 border border-red-200 flex items-start gap-2 animate-fadeIn">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                        </svg>
+                                        <p className="text-red-600 text-xs font-medium leading-tight">
+                                            {emailError || errors.email}
+                                        </p>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Tombol Submit */}
@@ -140,10 +184,17 @@ export default function ForgotPassword({ status }: { status?: string }) {
                             }`}>
                                 <button 
                                     type="submit" 
-                                    disabled={processing}
-                                    className="w-full px-6 py-3.5 bg-[#c70024] hover:bg-[#a3001e] text-white rounded-full font-bold shadow-lg hover:shadow-red-500/30 hover:-translate-y-1 transition-all duration-300 text-base disabled:opacity-50 disabled:hover:translate-y-0"
+                                    disabled={processing || submitted}
+                                    className="w-full px-6 py-3.5 bg-[#c70024] hover:bg-[#a3001e] text-white rounded-full font-bold shadow-lg hover:shadow-red-500/30 hover:-translate-y-1 transition-all duration-300 text-base disabled:opacity-50 disabled:hover:translate-y-0 flex items-center justify-center gap-2"
                                 >
-                                    Kirim Link Reset Password
+                                    {/* Loading Spinner */}
+                                    {processing && (
+                                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    )}
+                                    {submitted ? '✓ Link Terkirim' : processing ? 'Mengirim...' : 'Kirim Link Reset Password'}
                                 </button>
                             </div>
                              

@@ -35,7 +35,22 @@ class RegisteredUserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'no_hp' => ['required', 'string', 'max:15', 'unique:users,no_hp', 'regex:/^(?:\+62|62|0)8[1-9][0-9]{7,11}$/'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => [
+                'required', 
+                'confirmed', 
+                function ($attribute, $value, $fail) {
+                    $passed = 0;
+                    if (strlen($value) >= 8) $passed++;
+                    if (preg_match('/[A-Z]/', $value)) $passed++;
+                    if (preg_match('/[a-z]/', $value)) $passed++;
+                    if (preg_match('/[0-9]/', $value)) $passed++;
+                    if (preg_match('/[^A-Za-z0-9]/', $value)) $passed++;
+
+                    if ($passed < 2) {
+                        $fail('Password harus memenuhi minimal 2 kriteria keamanan (Panjang min 8, Huruf Besar, Huruf Kecil, Angka, atau Simbol).');
+                    }
+                },
+            ],
         ]);
 
         $user = User::create([

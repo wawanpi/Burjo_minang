@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany; // WAJIB DIIMPORT
+use App\Notifications\ResetPasswordNotification;
 
 class User extends Authenticatable
 {
@@ -73,5 +74,14 @@ class User extends Authenticatable
     public function iskasir(): bool
     {
         return $this->role === 'kasir';
+    }
+
+    /**
+     * Kirim notifikasi reset password menggunakan template kustom Burjo Minang.
+     * Override method bawaan Laravel agar email menggunakan branding & bahasa Indonesia.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 }

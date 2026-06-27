@@ -1,12 +1,38 @@
 // resources/js/Pages/Auth/RegisterPage.tsx
-import { useEffect, useState, FormEventHandler } from 'react';
+import { useEffect, useState, useMemo, FormEventHandler } from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
 
 declare function route(name: string, params?: any, absolute?: boolean): string;
 
+// ─── Utilitas Validasi Password ───
+interface PasswordCheck {
+    label: string;
+    test: (password: string) => boolean;
+}
+
+const PASSWORD_CHECKS: PasswordCheck[] = [
+    { label: 'Minimal 8 karakter', test: (p) => p.length >= 8 },
+    { label: 'Huruf besar (A-Z)', test: (p) => /[A-Z]/.test(p) },
+    { label: 'Huruf kecil (a-z)', test: (p) => /[a-z]/.test(p) },
+    { label: 'Angka (0-9)', test: (p) => /[0-9]/.test(p) },
+    { label: 'Simbol (!@#$%^&*)', test: (p) => /[^A-Za-z0-9]/.test(p) },
+];
+
+function getStrengthLevel(password: string): { level: number; label: string; color: string; bgColor: string } {
+    const passed = PASSWORD_CHECKS.filter((c) => c.test(password)).length;
+    if (passed <= 1) return { level: 1, label: 'Sangat Lemah', color: 'bg-red-500', bgColor: 'text-red-500' };
+    if (passed === 2) return { level: 2, label: 'Lemah', color: 'bg-orange-500', bgColor: 'text-orange-500' };
+    if (passed === 3) return { level: 3, label: 'Sedang', color: 'bg-yellow-500', bgColor: 'text-yellow-500' };
+    if (passed === 4) return { level: 4, label: 'Kuat', color: 'bg-blue-500', bgColor: 'text-blue-500' };
+    return { level: 5, label: 'Sangat Kuat', color: 'bg-green-500', bgColor: 'text-green-500' };
+}
+
 export default function RegisterPage() {
   // State untuk memicu animasi saat halaman pertama kali dimuat
   const [loaded, setLoaded] = useState(false);
+  // Toggle show/hide password
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { data, setData, post, processing, errors, reset } = useForm({
     name: '',
@@ -25,10 +51,45 @@ export default function RegisterPage() {
     };
   }, []);
 
+  // ─── Validasi Real-time ───
+  const strength = useMemo(() => getStrengthLevel(data.password), [data.password]);
+  const checksResults = useMemo(
+      () => PASSWORD_CHECKS.map((c) => ({ ...c, passed: c.test(data.password) })),
+      [data.password]
+  );
+  const passwordsMatch = data.password !== '' && data.password === data.password_confirmation;
+  const confirmTouched = data.password_confirmation.length > 0;
+  const passedCount = checksResults.filter((c) => c.passed).length;
+  const canSubmit = passedCount >= 2 && passwordsMatch && !processing;
+
   const submit: FormEventHandler = (e) => {
     e.preventDefault();
     post(route('register'));
   };
+
+  // ─── Ikon Mata (Show/Hide Password) ───
+  const EyeIcon = ({ show, onClick }: { show: boolean; onClick: () => void }) => (
+      <button
+          type="button"
+          onClick={onClick}
+          className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors cursor-pointer p-1"
+          tabIndex={-1}
+          aria-label={show ? 'Sembunyikan password' : 'Tampilkan password'}
+      >
+          {show ? (
+              // Eye-off icon
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+              </svg>
+          ) : (
+              // Eye icon
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+          )}
+      </button>
+  );
 
   return (
     <>
@@ -180,22 +241,67 @@ export default function RegisterPage() {
                       loaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'
                     }`}>
                         <label htmlFor="password" className="block text-sm font-bold text-gray-700 mb-1">Password</label>
-                        <input 
-                            id="password" 
-                            type="password" 
-                            value={data.password}
-                            onChange={(e) => setData('password', e.target.value)}
-                            required 
-                            autoComplete="new-password"
-                            className="w-full border-b-2 border-t-0 border-l-0 border-r-0 border-gray-200 focus:border-red-600 focus:ring-0 px-0 py-3 bg-transparent text-gray-900 placeholder-gray-300 transition-colors text-lg"
-                            placeholder="••••••••"
-                        />
-                        <div className="absolute right-0 bottom-4 text-gray-300 pointer-events-none">
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                            </svg>
+                        <div className="relative">
+                            <input 
+                                id="password" 
+                                type={showPassword ? 'text' : 'password'}
+                                value={data.password}
+                                onChange={(e) => setData('password', e.target.value)}
+                                required 
+                                autoComplete="new-password"
+                                className="w-full border-b-2 border-t-0 border-l-0 border-r-0 border-gray-200 focus:border-red-600 focus:ring-0 px-0 py-3 pr-10 bg-transparent text-gray-900 placeholder-gray-300 transition-colors text-lg"
+                                placeholder="••••••••"
+                            />
+                            <EyeIcon show={showPassword} onClick={() => setShowPassword(!showPassword)} />
                         </div>
                         {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+
+                        {/* ─── PASSWORD STRENGTH INDICATOR ─── */}
+                        {data.password.length > 0 && (
+                            <div className="mt-4 space-y-3 animate-fadeIn">
+                                {/* Strength Bar */}
+                                <div className="flex items-center gap-3">
+                                    <div className="flex gap-1 flex-1">
+                                        {[1, 2, 3, 4, 5].map((i) => (
+                                            <div
+                                                key={i}
+                                                className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                                                    i <= strength.level
+                                                        ? strength.color
+                                                        : 'bg-gray-200'
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <span className={`text-xs font-bold whitespace-nowrap ${strength.bgColor}`}>
+                                        {strength.label}
+                                    </span>
+                                </div>
+
+                                {/* Checklist Persyaratan */}
+                                <div className="grid grid-cols-1 gap-1.5">
+                                    {checksResults.map((check, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`flex items-center gap-2 text-xs transition-all duration-300 ${
+                                                check.passed ? 'text-green-600' : 'text-gray-400'
+                                            }`}
+                                        >
+                                            {check.passed ? (
+                                                <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            ) : (
+                                                <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                                    <circle cx="12" cy="12" r="9" />
+                                                </svg>
+                                            )}
+                                            <span>{check.label}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Input Konfirmasi Password */}
@@ -203,21 +309,48 @@ export default function RegisterPage() {
                       loaded ? 'opacity-100 translate-x-0' : 'opacity-0 -translate-x-8'
                     }`}>
                         <label htmlFor="password_confirmation" className="block text-sm font-bold text-gray-700 mb-1">Konfirmasi Password</label>
-                        <input 
-                            id="password_confirmation" 
-                            type="password" 
-                            value={data.password_confirmation}
-                            onChange={(e) => setData('password_confirmation', e.target.value)}
-                            required 
-                            autoComplete="new-password"
-                            className="w-full border-b-2 border-t-0 border-l-0 border-r-0 border-gray-200 focus:border-red-600 focus:ring-0 px-0 py-3 bg-transparent text-gray-900 placeholder-gray-300 transition-colors text-lg"
-                            placeholder="••••••••"
-                        />
-                        <div className="absolute right-0 bottom-4 text-gray-300 pointer-events-none">
-                             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
+                        <div className="relative">
+                            <input 
+                                id="password_confirmation" 
+                                type={showConfirmPassword ? 'text' : 'password'}
+                                value={data.password_confirmation}
+                                onChange={(e) => setData('password_confirmation', e.target.value)}
+                                required 
+                                autoComplete="new-password"
+                                className={`w-full border-b-2 border-t-0 border-l-0 border-r-0 focus:ring-0 px-0 py-3 pr-10 bg-transparent text-gray-900 placeholder-gray-300 transition-colors text-lg ${
+                                    confirmTouched
+                                        ? passwordsMatch
+                                            ? 'border-green-400 focus:border-green-500'
+                                            : 'border-red-400 focus:border-red-500'
+                                        : 'border-gray-200 focus:border-red-600'
+                                }`}
+                                placeholder="••••••••"
+                            />
+                            <EyeIcon show={showConfirmPassword} onClick={() => setShowConfirmPassword(!showConfirmPassword)} />
                         </div>
+                        
+                        {/* Feedback cocok / tidak cocok */}
+                        {confirmTouched && (
+                            <div className={`flex items-center gap-1.5 mt-2 text-xs font-medium transition-all duration-300 ${
+                                passwordsMatch ? 'text-green-600' : 'text-red-500'
+                            }`}>
+                                {passwordsMatch ? (
+                                    <>
+                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Password cocok
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                        Password tidak cocok
+                                    </>
+                                )}
+                            </div>
+                        )}
                         {errors.password_confirmation && <p className="text-red-500 text-xs mt-1">{errors.password_confirmation}</p>}
                     </div>
 
@@ -227,8 +360,12 @@ export default function RegisterPage() {
                     }`}>
                         <button 
                             type="submit" 
-                            disabled={processing}
-                            className="flex-1 px-6 py-3 bg-[#c70024] hover:bg-[#a3001e] text-white rounded-full font-bold shadow-lg hover:shadow-red-500/30 hover:-translate-y-1 transition-all duration-300 text-base disabled:opacity-50 disabled:hover:translate-y-0"
+                            disabled={!canSubmit}
+                            className={`flex-1 px-6 py-3 text-white rounded-full font-bold shadow-lg transition-all duration-300 text-base ${
+                                canSubmit 
+                                    ? 'bg-[#c70024] hover:bg-[#a3001e] hover:shadow-red-500/30 hover:-translate-y-1' 
+                                    : 'bg-gray-300 cursor-not-allowed'
+                            }`}
                         >
                             Daftar
                         </button>
