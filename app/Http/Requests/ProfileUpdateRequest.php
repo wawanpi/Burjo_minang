@@ -16,7 +16,7 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
                 'required',
@@ -40,6 +40,29 @@ class ProfileUpdateRequest extends FormRequest
                 'max:7168', // 7MB
             ],
         ];
+
+        // Validasi Kondisional: Jika user mengisi salah satu kolom password
+        if ($this->filled('password')) {
+            $rules['current_password'] = ['required', 'current_password'];
+            $rules['password'] = [
+                'required',
+                'confirmed',
+                function ($attribute, $value, $fail) {
+                    $passed = 0;
+                    if (strlen($value) >= 8) $passed++;
+                    if (preg_match('/[A-Z]/', $value)) $passed++;
+                    if (preg_match('/[a-z]/', $value)) $passed++;
+                    if (preg_match('/[0-9]/', $value)) $passed++;
+                    if (preg_match('/[^A-Za-z0-9]/', $value)) $passed++;
+
+                    if ($passed < 2) {
+                        $fail('Password harus memenuhi minimal 2 kriteria keamanan.');
+                    }
+                },
+            ];
+        }
+
+        return $rules;
     }
 
     /**

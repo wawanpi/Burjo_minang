@@ -45,6 +45,11 @@ class ProfileController extends Controller
         // Fill data text (name, email, no_hp)
         $user->fill($request->safe()->only(['name', 'email', 'no_hp']));
 
+        // Handle update password jika diisi
+        if ($request->filled('password')) {
+            $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+        }
+
         // Reset email verification jika email berubah
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
