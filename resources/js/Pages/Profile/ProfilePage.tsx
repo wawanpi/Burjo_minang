@@ -1,7 +1,36 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { Head, useForm, usePage } from '@inertiajs/react';
 import CustomerLayout from '@/Layouts/CustomerLayout';
 import OwnerLayout from '@/Layouts/OwnerLayout';
+
+// ─── Utilitas Validasi Password ───
+interface PasswordCheck { label: string; test: (password: string) => boolean; }
+const PASSWORD_CHECKS: PasswordCheck[] = [
+    { label: 'Minimal 8 karakter', test: (p) => p.length >= 8 },
+    { label: 'Huruf besar (A-Z)', test: (p) => /[A-Z]/.test(p) },
+    { label: 'Huruf kecil (a-z)', test: (p) => /[a-z]/.test(p) },
+    { label: 'Angka (0-9)', test: (p) => /[0-9]/.test(p) },
+    { label: 'Simbol (!@#$%^&*)', test: (p) => /[^A-Za-z0-9]/.test(p) },
+];
+
+function getStrengthLevel(password: string) {
+    const passed = PASSWORD_CHECKS.filter((c) => c.test(password)).length;
+    if (passed <= 1) return { level: 1, label: 'Sangat Lemah', color: 'bg-red-500', bgColor: 'text-red-500' };
+    if (passed === 2) return { level: 2, label: 'Lemah', color: 'bg-orange-500', bgColor: 'text-orange-500' };
+    if (passed === 3) return { level: 3, label: 'Sedang', color: 'bg-yellow-500', bgColor: 'text-yellow-500' };
+    if (passed === 4) return { level: 4, label: 'Kuat', color: 'bg-blue-500', bgColor: 'text-blue-500' };
+    return { level: 5, label: 'Sangat Kuat', color: 'bg-green-500', bgColor: 'text-green-500' };
+}
+
+const EyeIcon = ({ show, onClick }: { show: boolean; onClick: () => void }) => (
+    <button type="button" onClick={onClick} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors" tabIndex={-1}>
+        {show ? (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+        ) : (
+            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+        )}
+    </button>
+);
 
 interface User {
     id: number;
@@ -37,12 +66,20 @@ export default function ProfilePage({ status, auth }: Props) {
         user.foto_profil ? `/storage/${user.foto_profil}` : null
     );
 
+    const passwordInputRef = useRef<HTMLInputElement>(null);
+    const currentPasswordInputRef = useRef<HTMLInputElement>(null);
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
     const { data, setData, post, processing, errors, recentlySuccessful, reset, clearErrors } = useForm({
         _method: 'PATCH',
         name: user.name,
         email: user.email,
         no_hp: user.no_hp || '',
         foto_profil: null as File | null,
+        current_password: '',
+        password: '',
+        password_confirmation: '',
     });
 
     // Handle pemilihan foto (hanya aktif saat mode edit)
@@ -85,9 +122,28 @@ export default function ProfilePage({ status, auth }: Props) {
                 setIsEditing(false);
                 if (fileInputRef.current) fileInputRef.current.value = '';
                 setData('foto_profil', null);
+                reset('current_password', 'password', 'password_confirmation');
             },
+            onError: (errors) => {
+                if (errors.password) { reset('password', 'password_confirmation'); passwordInputRef.current?.focus(); }
+                if (errors.current_password) { reset('current_password'); currentPasswordInputRef.current?.focus(); }
+            }
         });
     };
+
+    // Validasi Password Real-time
+    const strength = useMemo(() => getStrengthLevel(data.password), [data.password]);
+    const checksResults = useMemo(() => PASSWORD_CHECKS.map((c) => ({ ...c, passed: c.test(data.password) })), [data.password]);
+    const passwordsMatch = data.password !== '' && data.password === data.password_confirmation;
+    const confirmTouched = data.password_confirmation.length > 0;
+    
+    // Syarat tombol bisa ditekan:
+    // 1. Sedang tidak loading request (processing)
+    // 2. Jika password DIISI, maka harus memenuhi syarat validasi kustom (passed >= 2) dan cocok.
+    // 3. Jika password KOSONG (user hanya edit profil nama/hp), maka boleh submit langsung.
+    const isPasswordFilled = data.password.length > 0;
+    const passwordIsValid = checksResults.filter(c => c.passed).length >= 2 && passwordsMatch && data.current_password !== '';
+    const canSubmit = !processing && (!isPasswordFilled || passwordIsValid);
 
     // Helper: Konfigurasi badge berdasarkan role
     const getRoleBadgeConfig = () => {
@@ -159,7 +215,7 @@ export default function ProfilePage({ status, auth }: Props) {
                             </div>
                         )}
 
-                        <form onSubmit={submit} className={`p-8 sm:p-10 ${status ? 'pt-20' : ''}`}>
+                        <div className={`p-8 sm:p-10 ${status ? 'pt-20' : ''}`}>
                             
                             <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-10">
                                 
@@ -250,7 +306,8 @@ export default function ProfilePage({ status, auth }: Props) {
                                 </div>
 
                                 {/* Kolom Kanan: Form Inputs */}
-                                <div className="space-y-6">
+                                <div className="space-y-8">
+                                    <form onSubmit={submit} className="space-y-6">
                                     
                                     {/* Nama */}
                                     <div>
@@ -339,9 +396,69 @@ export default function ProfilePage({ status, auth }: Props) {
                                         )}
                                     </div>
 
-                                    {/* Divider & Actions (Hanya muncul jika isEditing true) */}
+                                    {/* --- PASSWORD FIELDS --- */}
                                     {isEditing && (
-                                        <div className="animate-fade-in-up">
+                                        <div className="animate-fade-in-up mt-8">
+                                            <hr className="border-gray-100 my-8" />
+                                            <h3 className="text-sm font-bold text-gray-900 uppercase tracking-widest mb-6">Keamanan Akun (Opsional)</h3>
+                                            
+                                            <div className="space-y-6">
+                                                {/* Current Password */}
+                                                <div>
+                                                    <label htmlFor="current_password" className="block text-xs font-bold text-gray-600 uppercase tracking-widest mb-2">Password Saat Ini</label>
+                                                    <input id="current_password" ref={currentPasswordInputRef} type="password" value={data.current_password} onChange={(e) => setData('current_password', e.target.value)} autoComplete="current-password"
+                                                        className={`block w-full px-4 py-3.5 rounded-xl font-medium transition-all duration-300 bg-gray-50 text-gray-900 border focus:ring-1 focus:ring-red-700 focus:border-red-700 outline-none ${errors.current_password ? 'border-red-500' : 'border-gray-300'}`} placeholder="••••••••" />
+                                                    {errors.current_password && <p className="text-xs font-medium text-red-600 mt-2">{errors.current_password}</p>}
+                                                </div>
+
+                                                {/* New Password */}
+                                                <div>
+                                                    <label htmlFor="password" className="block text-xs font-bold text-gray-600 uppercase tracking-widest mb-2">Password Baru <span className="text-gray-400 font-medium normal-case ml-1">(Biarkan kosong jika tidak diubah)</span></label>
+                                                    <div className="relative">
+                                                        <input id="password" ref={passwordInputRef} type={showPassword ? 'text' : 'password'} value={data.password} onChange={(e) => setData('password', e.target.value)} autoComplete="new-password"
+                                                            className={`block w-full px-4 py-3.5 rounded-xl font-medium transition-all duration-300 bg-gray-50 text-gray-900 border focus:ring-1 focus:ring-red-700 focus:border-red-700 outline-none pr-12 ${errors.password ? 'border-red-500' : 'border-gray-300'}`} placeholder="••••••••" />
+                                                        <EyeIcon show={showPassword} onClick={() => setShowPassword(!showPassword)} />
+                                                    </div>
+                                                    {errors.password && <p className="text-xs font-medium text-red-600 mt-2">{errors.password}</p>}
+
+                                                    {data.password.length > 0 && (
+                                                        <div className="mt-4 space-y-3">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="flex gap-1 flex-1">
+                                                                    {[1, 2, 3, 4, 5].map((i) => (<div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= strength.level ? strength.color : 'bg-gray-200'}`} />))}
+                                                                </div>
+                                                                <span className={`text-xs font-bold whitespace-nowrap ${strength.bgColor}`}>{strength.label}</span>
+                                                            </div>
+                                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mt-2">
+                                                                {checksResults.map((check, idx) => (
+                                                                    <div key={idx} className={`flex items-center gap-1.5 text-xs font-medium transition-all duration-300 ${check.passed ? 'text-green-600' : 'text-gray-400'}`}>
+                                                                        {check.passed ? ( <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> ) : ( <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><circle cx="12" cy="12" r="9" /></svg> )}
+                                                                        <span>{check.label}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                {/* Confirm Password */}
+                                                <div>
+                                                    <label htmlFor="password_confirmation" className="block text-xs font-bold text-gray-600 uppercase tracking-widest mb-2">Konfirmasi Password Baru</label>
+                                                    <div className="relative">
+                                                        <input id="password_confirmation" type={showConfirmPassword ? 'text' : 'password'} value={data.password_confirmation} onChange={(e) => setData('password_confirmation', e.target.value)} autoComplete="new-password"
+                                                            className={`block w-full px-4 py-3.5 rounded-xl font-medium transition-all duration-300 bg-gray-50 text-gray-900 border focus:ring-1 outline-none pr-12 ${confirmTouched ? passwordsMatch ? 'border-green-400 focus:ring-green-500 focus:border-green-500' : 'border-red-400 focus:ring-red-500 focus:border-red-500' : errors.password_confirmation ? 'border-red-500 focus:ring-red-700 focus:border-red-700' : 'border-gray-300 focus:ring-red-700 focus:border-red-700'}`} placeholder="••••••••" />
+                                                        <EyeIcon show={showConfirmPassword} onClick={() => setShowConfirmPassword(!showConfirmPassword)} />
+                                                    </div>
+                                                    
+                                                    {confirmTouched && (
+                                                        <div className={`flex items-center gap-1.5 mt-2 text-xs font-medium ${passwordsMatch ? 'text-green-600' : 'text-red-500'}`}>
+                                                            {passwordsMatch ? ( <><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg> Password cocok</> ) : ( <><svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg> Password tidak cocok</> )}
+                                                        </div>
+                                                    )}
+                                                    {errors.password_confirmation && <p className="text-xs font-medium text-red-600 mt-2">{errors.password_confirmation}</p>}
+                                                </div>
+                                            </div>
+
                                             <hr className="border-gray-100 my-8" />
                                             
                                             <div className="flex flex-col-reverse sm:flex-row items-center justify-end gap-3 pt-2">
@@ -356,11 +473,11 @@ export default function ProfilePage({ status, auth }: Props) {
                                                 
                                                 <button
                                                     type="submit"
-                                                    disabled={processing}
+                                                    disabled={!canSubmit}
                                                     className={`w-full sm:w-auto px-8 py-3.5 rounded-xl text-white font-bold tracking-wide transition-colors duration-300 shadow-lg flex items-center justify-center gap-2 ${
-                                                        processing 
-                                                            ? 'bg-gray-400 cursor-not-allowed shadow-none' 
-                                                            : 'bg-red-700 hover:bg-red-800 shadow-red-700/30'
+                                                        canSubmit 
+                                                            ? 'bg-red-700 hover:bg-red-800 shadow-red-700/30'
+                                                            : 'bg-gray-400 cursor-not-allowed shadow-none'
                                                     }`}
                                                 >
                                                     {processing && (
@@ -375,9 +492,10 @@ export default function ProfilePage({ status, auth }: Props) {
                                         </div>
                                     )}
 
+                                    </form>
                                 </div>
                             </div>
-                        </form>
+                        </div>
                     </div>
                     
                 </main>
