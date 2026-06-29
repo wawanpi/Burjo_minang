@@ -281,6 +281,11 @@ export default function PosIndex({ menus, kategoriList }: Props) {
         setCompletedOrderId(null);
     };
 
+    // Fungsi cetak struk (buka di tab baru agar POS tidak tertutup)
+    const handlePrintReceipt = (orderId: number) => {
+        window.open(`/kasir/orders/${orderId}/struk`, '_blank');
+    };
+
     // Eksekusi pembayaran setelah konfirmasi modal
     const confirmCheckout = () => {
         setShowConfirmModal(false);
@@ -894,12 +899,25 @@ export default function PosIndex({ menus, kategoriList }: Props) {
                                         <span className="text-sm font-mono font-bold text-green-700">Order #{completedOrderId}</span>
                                     </div>
                                 )}
-                                <button
-                                    onClick={resetDigitalStatus}
-                                    className="mt-6 w-full py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors shadow-sm"
-                                >
-                                    ✓ Transaksi Berikutnya
-                                </button>
+                                <div className="flex flex-col gap-3 mt-6">
+                                    {completedOrderId && (
+                                        <button
+                                            onClick={() => handlePrintReceipt(completedOrderId)}
+                                            className="w-full py-3 bg-white border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm flex items-center justify-center gap-2"
+                                        >
+                                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                            </svg>
+                                            Cetak Nota
+                                        </button>
+                                    )}
+                                    <button
+                                        onClick={resetDigitalStatus}
+                                        className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl transition-colors shadow-sm"
+                                    >
+                                        ✓ Transaksi Berikutnya
+                                    </button>
+                                </div>
                             </>
                         )}
 

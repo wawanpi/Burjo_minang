@@ -179,12 +179,14 @@ export default function Sidebar({ isOpen, setIsOpen }: { isOpen?: boolean; setIs
                 </div>
 
                 <div className="flex gap-2">
-                    <Link
-                        href={route('profile.edit')}
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-bm-gold-400 hover:bg-bm-gold-400/10 hover:text-bm-gold-300 transition-all duration-300 text-sm font-semibold border border-transparent hover:border-bm-gold-400/20"
-                    >
-                        Profil
-                    </Link>
+                    {userRole !== 'kasir' && (
+                        <Link
+                            href={route('profile.edit')}
+                            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-bm-gold-400 hover:bg-bm-gold-400/10 hover:text-bm-gold-300 transition-all duration-300 text-sm font-semibold border border-transparent hover:border-bm-gold-400/20"
+                        >
+                            Profil
+                        </Link>
+                    )}
                     <Link
                         href="/logout"
                         method="post"

@@ -105,6 +105,94 @@ const filterActiveColor: Record<string, string> = {
     batal:               'bg-bm-red-600 text-white',
 };
 
+// ─── Presentation helpers (UI-only, no functional logic) ────────────────────────
+function StatusGlyph({ status }: { status: string }) {
+    const cls = 'w-3 h-3';
+    if (status === 'menunggu_pembayaran')
+        return (
+            <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        );
+    if (status === 'selesai')
+        return (
+            <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            </svg>
+        );
+    if (status === 'batal')
+        return (
+            <svg className={cls} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        );
+    return null;
+}
+
+function StatusBadge({ status }: { status: string }) {
+    const sc = statusConfig[status] || { label: status, color: 'bg-gray-100 text-gray-700 ring-1 ring-gray-500/10' };
+    return (
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${sc.color}`}>
+            {status === 'diproses' ? (
+                <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-sky-500 opacity-60 animate-ping" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-sky-500" />
+                </span>
+            ) : (
+                <StatusGlyph status={status} />
+            )}
+            {sc.label}
+        </span>
+    );
+}
+
+function PaymentBadge({ payment, align = 'center' }: { payment?: Payment | null; align?: 'center' | 'start' }) {
+    const pc = payment
+        ? (paymentStatusConfig[payment.status_pembayaran] || { label: payment.status_pembayaran, color: 'bg-gray-100 text-gray-700 ring-1 ring-gray-500/10' })
+        : { label: 'Belum Bayar', color: 'bg-gray-100 text-gray-700 ring-1 ring-gray-500/10' };
+    const isLunas = payment?.status_pembayaran === 'lunas';
+    return (
+        <div className={`inline-flex flex-col gap-1 ${align === 'center' ? 'items-center' : 'items-start'}`}>
+            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-colors ${pc.color}`}>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {isLunas ? (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    ) : (
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    )}
+                </svg>
+                {pc.label}
+            </span>
+            {payment?.metode_pembayaran && (
+                <span className="text-[10px] font-medium text-bm-text-muted">{payment.metode_pembayaran}</span>
+            )}
+        </div>
+    );
+}
+
+function ItemList({ items, max = 3 }: { items?: OrderItem[]; max?: number }) {
+    const list = items || [];
+    const shown = list.slice(0, max);
+    const rest = list.length - shown.length;
+    return (
+        <ul className="space-y-1">
+            {shown.map((item, i) => (
+                <li key={i} className="flex items-baseline justify-between gap-3 text-xs leading-relaxed">
+                    <span className="min-w-0 text-gray-700 truncate">{item.menu?.nama_menu || 'Menu Dihapus'}</span>
+                    <span className="shrink-0 font-semibold text-bm-text-muted tabular-nums">×{item.jumlah}</span>
+                </li>
+            ))}
+            {rest > 0 && (
+                <li>
+                    <span className="inline-flex items-center rounded-md bg-bm-cream px-1.5 py-0.5 text-[10px] font-semibold text-bm-text-muted ring-1 ring-black/[0.04]">
+                        +{rest} item lainnya
+                    </span>
+                </li>
+            )}
+        </ul>
+    );
+}
+
 // ─── Component ─────────────────────────────────────────────────────────────────
 export default function OrderIndex({ orders, filters }: Props) {
     const { flash } = usePage().props as any;
@@ -187,11 +275,30 @@ export default function OrderIndex({ orders, filters }: Props) {
     const formatRupiah = (val: number | string) =>
         new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(val));
 
-    const formatTanggal = (dateStr: string) => {
+    // Format ringkas "27 Jun, 22.19" agar tidak wrap 3 baris
+    const formatTanggalShort = (dateStr: string) => {
         if (!dateStr) return '-';
-        return new Date(dateStr).toLocaleDateString('id-ID', {
-            day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
-        });
+        const d = new Date(dateStr);
+        const tgl = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+        const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        return `${tgl}, ${jam}`;
+    };
+
+    // Aksen kartu (mobile) — mengikuti kondisi SLA yang sama dengan getRowStyle
+    const getCardStyle = (order: Order) => {
+        const base = 'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated';
+        if (order.status_pesanan === 'diproses') {
+            if (order.tipe_pesanan === 'online' && order.sisa_menit !== null) {
+                if (order.sisa_menit <= 5 && order.sisa_menit > 0)
+                    return `${base} border-red-300 bg-red-50 ring-1 ring-red-200`;
+            } else if (order.tipe_pesanan !== 'online' && order.durasi_menit !== null) {
+                if (order.durasi_menit >= 15)
+                    return `${base} border-red-300 bg-red-50 ring-1 ring-red-200`;
+                if (order.durasi_menit >= 10)
+                    return `${base} border-yellow-300 bg-yellow-50 ring-1 ring-yellow-200`;
+            }
+        }
+        return `${base} border-black/[0.06] bg-white`;
     };
 
     const handleFilterStatus = (status: string) => {
@@ -260,11 +367,109 @@ export default function OrderIndex({ orders, filters }: Props) {
         });
     };
 
+    // ─── Kolom Waktu (ringkas) — kondisi SLA identik dengan versi lama ──────────
+    const renderTime = (order: Order) => (
+        <div className="space-y-0.5">
+            <div className="text-xs font-medium text-gray-700 whitespace-nowrap">
+                {formatTanggalShort(order.tanggal_pesan)}
+            </div>
+            {order.tipe_pesanan === 'online' && order.waktu_pengambilan && (
+                <div className="text-[11px] text-purple-600 font-medium whitespace-nowrap">
+                    Ambil {formatTanggalShort(order.waktu_pengambilan)}
+                    {order.sisa_menit !== null && order.status_pesanan === 'diproses' && (
+                        <span className="ml-1 font-bold">({Math.round(order.sisa_menit)}m)</span>
+                    )}
+                </div>
+            )}
+            {order.tipe_pesanan !== 'online' && order.durasi_menit !== null && order.status_pesanan === 'diproses' && (
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap ${
+                    order.durasi_menit >= 15 ? 'bg-bm-red-50 text-bm-red-700' : 'bg-amber-50 text-amber-700'
+                }`}>
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Berjalan {Math.round(order.durasi_menit)} mnt
+                </span>
+            )}
+        </div>
+    );
+
+    // ─── Kolom Aksi — handler & kondisi disabled 100% sama, hanya tata letaknya ──
+    const renderActions = (order: Order, variant: 'table' | 'card' = 'table') => {
+        const wrap = variant === 'card'
+            ? 'flex items-center gap-2 w-full'
+            : 'flex items-center justify-end gap-2';
+
+        if (order.status_pesanan === 'batal') {
+            return (
+                <div className={wrap}>
+                    <span className="text-xs text-gray-300 italic">—</span>
+                </div>
+            );
+        }
+
+        const showWaiting = order.payment?.metode_pembayaran !== 'Tunai' && order.status_pesanan === 'menunggu_pembayaran';
+
+        return (
+            <div className={wrap}>
+                {showWaiting ? (
+                    <div
+                        className="flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 px-2.5 py-2 text-[11px] font-bold rounded-lg border border-dashed border-gray-300 bg-gray-50 text-gray-400 opacity-80 cursor-not-allowed select-none whitespace-nowrap"
+                        title="Menunggu konfirmasi otomatis dari Midtrans"
+                        aria-disabled="true"
+                    >
+                        <svg className="w-3.5 h-3.5 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Menunggu Sistem…
+                    </div>
+                ) : order.status_pesanan !== 'selesai' ? (
+                    <select
+                        value={order.status_pesanan}
+                        onChange={(e) => handleUpdateStatus(order, e.target.value)}
+                        aria-label={`Ubah status pesanan #${order.id}`}
+                        className="flex-1 min-w-0 px-3 py-2 text-xs font-semibold rounded-lg border border-gray-300 bg-white text-bm-charcoal-800 shadow-sm hover:border-bm-gold-400 focus:outline-none focus:ring-2 focus:ring-bm-gold-400 focus:border-transparent transition-all cursor-pointer"
+                    >
+                        {renderStatusOptions(order)}
+                    </select>
+                ) : null}
+
+                {order.status_pesanan !== 'menunggu_pembayaran' && (
+                    <button
+                        onClick={() => handlePrintNota(order.id)}
+                        aria-label={`Cetak nota pesanan #${order.id}`}
+                        title="Cetak Nota"
+                        className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-bm-charcoal-800/15 bg-white text-xs font-semibold text-bm-charcoal-800 hover:bg-bm-charcoal-900 hover:text-white hover:border-bm-charcoal-900 transition-colors whitespace-nowrap"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                        </svg>
+                        <span className={variant === 'table' ? 'hidden 2xl:inline' : ''}>Cetak Nota</span>
+                    </button>
+                )}
+            </div>
+        );
+    };
+
+    // Chip tipe pesanan (dipakai tabel & kartu)
+    const renderTipeChip = (order: Order) => (
+        <span className={`inline-flex items-center text-[10px] uppercase font-bold px-1.5 py-0.5 rounded tracking-wide ${
+            order.tipe_pesanan === 'online' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
+        }`}>
+            {order.tipe_pesanan === 'dine_in'
+                ? `DINE IN (${order.jumlah_orang || 1} ORANG)`
+                : order.tipe_pesanan.replace('_', ' ')}
+        </span>
+    );
+
     const paginationLinks = orders?.links || [];
 
     return (
         <OwnerLayout title="Manajemen Pesanan">
             <Head title="Manajemen Pesanan" />
+
+            {/* Pengaman terakhir: tidak ada scroll horizontal di lebar mana pun */}
+            <div className="w-full overflow-x-hidden">
 
             {/* Flash Messages */}
             {flash?.success && (
@@ -294,9 +499,12 @@ export default function OrderIndex({ orders, filters }: Props) {
                         <h1 className="text-2xl lg:text-[28px] font-serif font-bold text-bm-charcoal-900 leading-tight">Daftar Pesanan</h1>
                     </div>
                     <div className="bm-gold-underline mt-3" />
-                    <p className="text-sm text-bm-text-muted mt-2">
-                        {orders?.total || orderData.length} pesanan ditemukan
-                    </p>
+                    <div className="mt-3">
+                        <span className="inline-flex items-center gap-1.5 rounded-full bg-bm-charcoal-900 px-3 py-1 text-xs font-semibold text-white">
+                            <span className="text-bm-gold-400">✦</span>
+                            {orders?.total || orderData.length} pesanan ditemukan
+                        </span>
+                    </div>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                     <button
@@ -325,148 +533,127 @@ export default function OrderIndex({ orders, filters }: Props) {
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="overflow-hidden rounded-2xl border border-black/[0.05] bg-white shadow-soft w-full animate-page-enter">
-                <div className="overflow-x-auto w-full custom-scrollbar">
-                    <table className="min-w-[900px] w-full divide-y divide-gray-200">
-                        <thead className="bg-bm-cream">
-                            <tr>
-                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">ID / Tipe</th>
-                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Pelanggan</th>
-                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Item Pesanan</th>
-                                <th className="px-6 py-3.5 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Total</th>
-                                <th className="px-6 py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Status</th>
-                                <th className="px-6 py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Bayar</th>
-                                <th className="px-6 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Waktu</th>
-                                <th className="px-6 py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-black/[0.05]">
-                            {orderData.length === 0 ? (
-                                <tr>
-                                    <td colSpan={8} className="px-6 py-16 text-center">
-                                        <div className="flex flex-col items-center gap-2 text-bm-text-muted">
-                                            <span className="text-5xl opacity-40 animate-float">📋</span>
-                                            <p className="font-serif italic text-lg text-bm-charcoal-800">Tidak ada pesanan ditemukan.</p>
-                                            <p className="text-sm">Coba ubah filter status di atas.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : (
-                                orderData.map((order) => {
-                                    const sc = statusConfig[order.status_pesanan] || { label: order.status_pesanan, color: 'bg-gray-100 text-gray-700' };
-                                    const pc = order.payment
-                                        ? (paymentStatusConfig[order.payment.status_pembayaran] || { label: order.payment.status_pembayaran, color: 'bg-gray-100 text-gray-700' })
-                                        : { label: 'Belum Bayar', color: 'bg-gray-100 text-gray-700' };
-
-                                    return (
+            {orderData.length === 0 ? (
+                /* ── Empty State ───────────────────────────────────────────── */
+                <div className="rounded-2xl border border-dashed border-black/[0.1] bg-white shadow-soft px-6 py-20 text-center animate-page-enter">
+                    <div className="flex flex-col items-center gap-3 text-bm-text-muted">
+                        <span className="text-6xl opacity-40 animate-float">📋</span>
+                        <p className="font-serif italic text-xl text-bm-charcoal-800">Belum ada pesanan</p>
+                        <p className="text-sm">Coba ubah filter status di atas.</p>
+                    </div>
+                </div>
+            ) : (
+                <>
+                    {/* ── Desktop lebar (≥1280px): Tabel, header sticky, TANPA scroll samping ── */}
+                    <div className="hidden xl:block overflow-hidden rounded-2xl border border-black/[0.05] bg-white shadow-soft w-full animate-page-enter">
+                        <div className="max-h-[68vh] overflow-y-auto overflow-x-hidden custom-scrollbar">
+                            <table className="w-full table-fixed divide-y divide-gray-200">
+                                <colgroup>
+                                    <col className="w-[12%]" />
+                                    <col className="w-[15%]" />
+                                    <col className="w-[19%]" />
+                                    <col className="w-[12%]" />
+                                    <col className="w-[14%]" />
+                                    <col className="w-[12%]" />
+                                    <col className="w-[16%]" />
+                                </colgroup>
+                                <thead className="bg-bm-cream sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
+                                    <tr>
+                                        <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">ID / Tipe</th>
+                                        <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Pelanggan</th>
+                                        <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Item Pesanan</th>
+                                        <th className="px-4 py-3.5 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Total</th>
+                                        <th className="px-4 py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Status / Bayar</th>
+                                        <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Waktu</th>
+                                        <th className="px-4 py-3.5 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-black/[0.05]">
+                                    {orderData.map((order) => (
                                         <tr key={order.id} className={getRowStyle(order)}>
-                                            <td className="px-6 py-4">
+                                            <td className="px-4 py-4 align-top">
                                                 <div className="text-sm font-mono font-bold text-gray-900">#{order.id}</div>
-                                                <span className={`inline-flex mt-1 text-[10px] uppercase font-bold px-1.5 py-0.5 rounded ${
-                                                    order.tipe_pesanan === 'online' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
-                                                }`}>
-                                                    {order.tipe_pesanan === 'dine_in'
-                                                        ? `DINE IN (${order.jumlah_orang || 1} ORANG)`
-                                                        : order.tipe_pesanan.replace('_', ' ')}
-                                                </span>
+                                                <div className="mt-1">{renderTipeChip(order)}</div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm font-medium text-gray-900">{order.user?.name || 'Guest'}</div>
-                                                <div className="text-xs text-gray-500">{order.user?.no_hp || order.user?.email || '-'}</div>
+                                            <td className="px-4 py-4 align-top">
+                                                <div className="text-sm font-medium text-gray-900 truncate">{order.user?.name || 'Guest'}</div>
+                                                <div className="text-xs text-gray-500 truncate">{order.user?.no_hp || order.user?.email || '-'}</div>
                                             </td>
-                                            <td className="px-6 py-4">
-                                                <div className="space-y-1 max-w-xs">
-                                                    {order.order_items?.map((item, i) => (
-                                                        <div key={i} className="text-xs text-gray-600">
-                                                            {item.menu?.nama_menu || 'Menu Dihapus'} × {item.jumlah}
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                            <td className="px-4 py-4 align-top">
+                                                <ItemList items={order.order_items} />
                                             </td>
-                                            <td className="px-6 py-4 text-right text-sm font-bold text-bm-red-600">
+                                            <td className="px-4 py-4 align-top text-right text-sm font-bold text-bm-red-600 whitespace-nowrap">
                                                 {formatRupiah(order.total_harga)}
                                             </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold ${sc.color}`}>
-                                                    {order.status_pesanan === 'diproses' && (
-                                                        <span className="relative flex h-1.5 w-1.5">
-                                                            <span className="absolute inline-flex h-full w-full rounded-full bg-sky-500 opacity-60 animate-ping" />
-                                                            <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-sky-500" />
-                                                        </span>
-                                                    )}
-                                                    {sc.label}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${pc.color}`}>
-                                                    {pc.label}
-                                                </span>
-                                                {order.payment?.metode_pembayaran && (
-                                                    <div className="text-xs text-gray-400 mt-1">{order.payment.metode_pembayaran}</div>
-                                                )}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <div className="text-sm text-gray-600 font-medium">
-                                                    Dibuat: {formatTanggal(order.tanggal_pesan)}
+                                            <td className="px-4 py-4 align-top">
+                                                <div className="flex flex-col items-center gap-1.5">
+                                                    <StatusBadge status={order.status_pesanan} />
+                                                    <PaymentBadge payment={order.payment} align="center" />
                                                 </div>
-                                                {order.tipe_pesanan === 'online' && order.waktu_pengambilan && (
-                                                    <div className="text-xs text-purple-600 font-medium mt-1">
-                                                        Diambil: {formatTanggal(order.waktu_pengambilan)}
-                                                        {order.sisa_menit !== null && order.status_pesanan === 'diproses' && (
-                                                            <span className="font-bold ml-1">({Math.round(order.sisa_menit)}m tersisa)</span>
-                                                        )}
-                                                    </div>
-                                                )}
-                                                {order.tipe_pesanan !== 'online' && order.durasi_menit !== null && order.status_pesanan === 'diproses' && (
-                                                    <div className="text-xs text-amber-600 font-medium mt-1">
-                                                        Berjalan: <span className="font-bold">{Math.round(order.durasi_menit)} menit</span>
-                                                    </div>
-                                                )}
                                             </td>
-                                            <td className="px-6 py-4 text-center">
-                                                <div className="flex flex-col items-center gap-2">
-                                                {order.status_pesanan === 'batal' ? (
-                                                    <span className="text-xs text-gray-300 italic">—</span>
-                                                ) : (
-                                                    <>
-                                                        {order.payment?.metode_pembayaran !== 'Tunai' && order.status_pesanan === 'menunggu_pembayaran' ? (
-                                                            <div className="w-full px-2 py-1.5 text-[11px] font-bold text-center rounded-lg border border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed" title="Menunggu konfirmasi otomatis dari Midtrans">
-                                                                Menunggu Sistem...
-                                                            </div>
-                                                        ) : order.status_pesanan !== 'selesai' && (
-                                                            <select
-                                                                value={order.status_pesanan}
-                                                                onChange={(e) => handleUpdateStatus(order, e.target.value)}
-                                                                className="w-full px-2 py-1.5 text-xs font-medium rounded-lg border border-gray-300 bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-bm-gold-400 focus:border-transparent transition-all cursor-pointer"
-                                                            >
-                                                                {renderStatusOptions(order)}
-                                                            </select>
-                                                        )}
-
-                                                        {order.status_pesanan !== 'menunggu_pembayaran' && (
-                                                            <button
-                                                                onClick={() => handlePrintNota(order.id)}
-                                                                className="w-full inline-flex items-center justify-center gap-1 px-3 py-1.5 rounded-full border border-gray-300 text-xs font-semibold text-bm-charcoal-800 hover:bg-bm-cream hover:border-gray-400 transition-colors"
-                                                            >
-                                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                                                                </svg>
-                                                                Cetak Nota
-                                                            </button>
-                                                        )}
-                                                    </>
-                                                )}
-                                                </div>
+                                            <td className="px-4 py-4 align-top">
+                                                {renderTime(order)}
+                                            </td>
+                                            <td className="px-4 py-4 align-top">
+                                                {renderActions(order, 'table')}
                                             </td>
                                         </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {/* ── iPad & HP (<1280px): Kartu vertikal, 1 kolom (HP) / 2 kolom (tablet) ── */}
+                    <div className="xl:hidden grid grid-cols-1 md:grid-cols-2 gap-4 animate-page-enter">
+                        {orderData.map((order) => (
+                            <article
+                                key={order.id}
+                                className={`rounded-2xl border p-4 shadow-soft ${getCardStyle(order)}`}
+                            >
+                                {/* Header kartu: ID + tipe + status */}
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-sm font-mono font-bold text-gray-900">#{order.id}</span>
+                                        {renderTipeChip(order)}
+                                    </div>
+                                    <StatusBadge status={order.status_pesanan} />
+                                </div>
+
+                                <div className="my-3 border-t border-dashed border-black/[0.08]" />
+
+                                {/* Body kartu */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <div className="text-sm font-medium text-gray-900 truncate">{order.user?.name || 'Guest'}</div>
+                                            <div className="text-xs text-gray-500 truncate">{order.user?.no_hp || order.user?.email || '-'}</div>
+                                        </div>
+                                        <PaymentBadge payment={order.payment} align="start" />
+                                    </div>
+
+                                    <div className="rounded-xl bg-bm-cream/60 p-3">
+                                        <ItemList items={order.order_items} />
+                                    </div>
+
+                                    <div className="flex items-end justify-between gap-3">
+                                        {renderTime(order)}
+                                        <div className="text-right">
+                                            <div className="bm-eyebrow !text-[10px]">Total</div>
+                                            <div className="text-base font-bold text-bm-red-600 whitespace-nowrap">{formatRupiah(order.total_harga)}</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Footer kartu: aksi */}
+                                <div className="mt-4 pt-3 border-t border-dashed border-black/[0.08]">
+                                    {renderActions(order, 'card')}
+                                </div>
+                            </article>
+                        ))}
+                    </div>
+                </>
+            )}
 
             {/* Pagination */}
             {paginationLinks.length > 3 && (
@@ -488,6 +675,7 @@ export default function OrderIndex({ orders, filters }: Props) {
                     ))}
                 </div>
             )}
+            </div>
         </OwnerLayout>
     );
 }

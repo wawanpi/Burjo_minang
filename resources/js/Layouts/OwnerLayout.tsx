@@ -100,7 +100,7 @@ export default function OwnerLayout({ title, children }: { title?: string; child
                 </header>
 
                 {/* Area Children — with proper top padding to avoid header overlap */}
-                <main className="p-4 lg:p-8 flex-1 overflow-y-auto w-full custom-scrollbar relative z-10">
+                <main className="p-4 lg:p-8 flex-1 overflow-y-auto w-full custom-scrollbar">
                     {children}
                 </main>
             </div>

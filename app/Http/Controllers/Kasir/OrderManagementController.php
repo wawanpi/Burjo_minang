@@ -166,4 +166,17 @@ class OrderManagementController extends Controller
             'kasir' => auth()->user(), // Kasir / Owner yang sedang login
         ]);
     }
+
+    /**
+     * Cetak struk thermal (Blade ringan, auto-print).
+     */
+    public function printStruk(Order $order)
+    {
+        $order->load(['user:id,name', 'orderItems.menu:id,nama_menu,harga', 'payment']);
+
+        return view('kasir.struk', [
+            'order' => $order,
+            'kasir' => auth()->user(),
+        ]);
+    }
 }

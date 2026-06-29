@@ -134,7 +134,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
 
             {/* ─── Toast Notification (Mengambang di Pojok Kanan Atas) ─── */}
             {toastMessage && (
-                <div className="fixed top-5 right-5 z-[9999] animate-toast-in">
+                <div className="fixed bottom-5 right-5 z-[9999] animate-toast-in">
                     <div className="flex items-center gap-3 px-4 py-3 bg-white border-l-4 border-green-500 shadow-xl rounded-lg min-w-[300px]">
                         <div className="flex-shrink-0">
                             <svg className="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -80,6 +80,7 @@ Route::middleware(['auth', 'role:owner,kasir'])
         Route::get('/orders', [OrderManagementController::class, 'index'])->name('orders.index');
         Route::patch('/orders/{order}/status', [OrderManagementController::class, 'updateStatus'])->name('orders.updateStatus');
         Route::get('/orders/{order}/nota', [OrderManagementController::class, 'printNota'])->name('orders.nota');
+        Route::get('/orders/{order}/struk', [OrderManagementController::class, 'printStruk'])->name('orders.struk');
 
         // Point of Sale / Kasir Offline
         Route::get('/pos', [PosController::class, 'index'])->name('pos.index');

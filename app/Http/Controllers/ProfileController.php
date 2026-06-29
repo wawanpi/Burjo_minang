@@ -23,6 +23,8 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        abort_if($request->user()->role === 'kasir', 403, 'Akses ditolak.');
+
         return Inertia::render('Profile/ProfilePage', [
             'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
             'status' => session('status'),
@@ -40,6 +42,8 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
+        abort_if($request->user()->role === 'kasir', 403, 'Akses ditolak.');
+
         $user = $request->user();
 
         // Fill data text (name, email, no_hp)
@@ -77,6 +81,8 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        abort_if($request->user()->role === 'kasir', 403, 'Akses ditolak.');
+
         $request->validate([
             'password' => ['required', 'current_password'],
         ]);

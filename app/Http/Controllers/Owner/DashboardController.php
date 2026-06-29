@@ -25,6 +25,46 @@ class DashboardController extends Controller
      */
     public function index(): \Inertia\Response
     {
+        $user = auth()->user();
+
+        // ─── LOGIKA KHUSUS KASIR ───
+        if ($user->role === 'kasir') {
+            $pesananDiproses = Order::where('status_pesanan', 'diproses')->count();
+            $pesananHarusDiselesaikan = Order::where('status_pesanan', 'menunggu_pembayaran')->count();
+            $pesananSelesaiHariIni = Order::where('status_pesanan', 'selesai')
+                ->whereDate('tanggal_pesan', today())->count();
+            $pesananHariIni = Order::whereDate('tanggal_pesan', today())->count();
+
+            $stats = [
+                'pesanan_diproses'       => $pesananDiproses,
+                'harus_diselesaikan'     => $pesananHarusDiselesaikan,
+                'pesanan_selesai'        => $pesananSelesaiHariIni,
+                'pesanan_hari_ini'       => $pesananHariIni,
+            ];
+
+            // Antrean terbaru hari ini: prioritaskan yang butuh tindakan (diproses/pending dulu)
+            $antrean_terbaru = Order::with(['user:id,name'])
+                ->whereDate('tanggal_pesan', today())
+                ->orderByRaw("FIELD(status_pesanan, 'menunggu_pembayaran', 'diproses', 'selesai', 'dibatalkan')")
+                ->latest('tanggal_pesan')
+                ->take(7)
+                ->get()
+                ->map(fn($o) => [
+                    'id'                => $o->id,
+                    'waktu'             => Carbon::parse($o->tanggal_pesan)->timezone('Asia/Jakarta')->isoFormat('HH:mm'),
+                    'pelanggan'         => $o->user->name ?? 'Walk-in',
+                    'status'            => $o->status_pesanan,
+                    'total'             => (int) $o->total_harga,
+                    'waktu_pengambilan' => $o->waktu_pengambilan ? Carbon::parse($o->waktu_pengambilan)->timezone('Asia/Jakarta')->format('H:i') : null,
+                    'sisa_menit'        => $o->waktu_pengambilan
+                        ? (int) round(now('Asia/Jakarta')->diffInMinutes(Carbon::parse($o->waktu_pengambilan, 'Asia/Jakarta'), false))
+                        : null,
+                ]);
+
+            return Inertia::render('Kasir/Dashboard/DashboardPage', compact('stats', 'antrean_terbaru'));
+        }
+
+        // ─── LOGIKA KHUSUS OWNER ───
         // 1. Total Pendapatan: Sum total_harga dari orders yang payment-nya lunas
         $totalPendapatan = Order::whereHas('payment', function ($query) {
             $query->where('status_pembayaran', 'lunas');
