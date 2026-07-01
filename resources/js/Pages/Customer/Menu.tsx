@@ -229,6 +229,7 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
 
     // ─── Form Checkout State ─────────────────────────────────────────────────
     const [tipeLayanan, setTipeLayanan] = useState<'dine_in' | 'take_away'>('take_away');
+    const [tipeWaktu, setTipeWaktu] = useState<'hari_ini' | 'po'>('hari_ini');
     const [waktuKedatangan, setWaktuKedatangan] = useState('');
     const [metodePembayaran, setMetodePembayaran] = useState<'Transfer Bank' | 'QRIS'>('QRIS');
     const [jumlahOrang, setJumlahOrang] = useState<number>(1);
@@ -257,7 +258,7 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
     }, []);
 
     // ─── Kalkulasi waktu minimal ─────────────────────────────────────────────
-    const getMinTimeStr = (): string => {
+    const minWaktuHariIni = (): string => {
         const now = new Date();
         now.setMinutes(now.getMinutes() + 15);
         const hours = String(now.getHours()).padStart(2, '0');
@@ -265,41 +266,55 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
         return `${hours}:${minutes}`;
     };
 
-    const validateTime = (timeStr: string) => {
-        const now = new Date();
-        const minDate = new Date(now.getTime() + 15 * 60000);
+    const minTanggalPO = (): string => {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+        const offset = tomorrow.getTimezoneOffset() * 60000;
+        return new Date(tomorrow.getTime() - offset).toISOString().slice(0, 16);
+    };
 
-        const [hours, minutes] = timeStr.split(':').map(Number);
-        const selectedDate = new Date(now.getTime());
-        selectedDate.setHours(hours, minutes, 0, 0);
+    const getTodayDateStr = () => {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        return `${yyyy}-${mm}-${dd}`;
+    };
 
-        if (selectedDate.getTime() < now.getTime()) {
-            selectedDate.setDate(selectedDate.getDate() + 1);
+    const validateTime = (valStr: string) => {
+        if (!valStr) return { isValid: true };
+        
+        if (tipeWaktu === 'hari_ini') {
+            const timeOnly = valStr.includes(' ') ? valStr.split(' ')[1] : valStr;
+            return { isValid: timeOnly >= minWaktuHariIni() };
+        } else {
+            return { isValid: valStr >= minTanggalPO() };
         }
-
-        const minTimeStr = `${String(minDate.getHours()).padStart(2, '0')}:${String(minDate.getMinutes()).padStart(2, '0')}`;
-
-        return {
-            isValid: selectedDate.getTime() >= minDate.getTime(),
-            minTimeStr,
-        };
     };
 
     const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const selectedTime = e.target.value;
-        setWaktuKedatangan(selectedTime);
-
-        if (!selectedTime) {
+        const selectedVal = e.target.value;
+        if (!selectedVal) {
+            setWaktuKedatangan('');
             setTimeError(null);
             return;
         }
 
-        const { isValid, minTimeStr } = validateTime(selectedTime);
-
-        if (!isValid) {
-            setTimeError('Waktu minimal adalah ' + minTimeStr + ' WIB untuk proses memasak.');
+        if (tipeWaktu === 'hari_ini') {
+            if (selectedVal < minWaktuHariIni()) {
+                setTimeError('⏱️ Waktu pengambilan minimal 15 menit dari sekarang.');
+            } else {
+                setTimeError(null);
+            }
+            setWaktuKedatangan(selectedVal); // Simpan hanya HH:mm
         } else {
-            setTimeError(null);
+            if (selectedVal < minTanggalPO()) {
+                setTimeError('Waktu PO minimal besok.');
+            } else {
+                setTimeError(null);
+            }
+            setWaktuKedatangan(selectedVal); // Simpan format Date
         }
     };
 
@@ -368,6 +383,7 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
     const handleCheckout = async (e: React.FormEvent) => {
         e.preventDefault();
         if (cart.length === 0) return;
+        if (isSubmitting) return; // Guard re-entry: cegah double-submit via keyboard Enter cepat
 
         if (waktuKedatangan) {
             const { isValid } = validateTime(waktuKedatangan);
@@ -381,6 +397,29 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
         setPaymentStatus('loading');
         setPaymentMessage('');
 
+        // ── Manipulasi waktu_pengambilan sebelum submit ───────────────────────
+        // Jika user memilih "Hari Ini", waktuKedatangan hanya berisi "HH:mm"
+        // (dari input type="time"). Laravel butuh format datetime lengkap agar
+        // lolos rule 'date' dan Carbon::parse() tidak crash.
+        let finalWaktu: string | null = waktuKedatangan || null;
+        if (waktuKedatangan) {
+            if (tipeWaktu === 'hari_ini') {
+                // Ambil bagian jam saja (berjaga-jaga kalau sudah ada tanggal)
+                const timeOnly = waktuKedatangan.includes(' ')
+                    ? waktuKedatangan.split(' ')[1]
+                    : waktuKedatangan.includes('T')
+                        ? waktuKedatangan.split('T')[1]
+                        : waktuKedatangan;
+                // Pastikan format HH:mm (tanpa detik ganda)
+                const timeParts = timeOnly.split(':');
+                const normalizedTime = `${timeParts[0]}:${timeParts[1]}`;
+                // Gabungkan dengan tanggal hari ini → "YYYY-MM-DD HH:mm:00"
+                finalWaktu = `${getTodayDateStr()} ${normalizedTime}:00`;
+            }
+            // Jika tipeWaktu === 'po', waktuKedatangan sudah berformat
+            // "YYYY-MM-DDTHH:mm" dari input datetime-local → tidak perlu diubah
+        }
+
         const payload = {
             items: cart.map((item) => ({
                 menu_id: item.menu.id,
@@ -388,7 +427,7 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                 harga: item.menu.harga,
             })),
             tipe_pesanan: tipeLayanan,
-            waktu_pengambilan: waktuKedatangan || null,
+            waktu_pengambilan: finalWaktu,
             metode_pembayaran: metodePembayaran,
             jumlah_orang: tipeLayanan === 'dine_in' ? jumlahOrang : null,
         };
@@ -409,12 +448,42 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                 body: JSON.stringify(payload),
             });
 
-            const data = await response.json();
+            // ── Penanganan Error Validasi (422) & Error Lainnya ───────────────
+            // Coba parse JSON; jika gagal (misal server down / HTML error page),
+            // baru fallback ke pesan generic.
+            let data: any;
+            try {
+                data = await response.json();
+            } catch (_jsonErr) {
+                // Response bukan JSON (misal 500 HTML page)
+                setPaymentStatus('error');
+                setPaymentMessage('Server mengembalikan respons tidak valid. Silakan coba lagi.');
+                setIsSubmitting(false);
+                return;
+            }
 
             if (!response.ok) {
-                const errMsg = data?.message ?? 'Terjadi kesalahan saat memproses pesanan.';
-                setPaymentStatus('error');
-                setPaymentMessage(errMsg);
+                // Laravel 422 mengirim { message: "...", errors: { field: ["msg"] } }
+                // Prioritaskan menampilkan error validasi spesifik per-field
+                if (response.status === 422 && data?.errors) {
+                    const errorMessages = Object.entries(data.errors as Record<string, string[]>)
+                        .map(([field, msgs]) => {
+                            const label = field === 'waktu_pengambilan' ? 'Waktu Pengambilan'
+                                : field === 'tipe_pesanan' ? 'Tipe Pesanan'
+                                : field === 'metode_pembayaran' ? 'Metode Pembayaran'
+                                : field === 'jumlah_orang' ? 'Jumlah Orang'
+                                : field;
+                            return `${label}: ${msgs.join(', ')}`;
+                        })
+                        .join('\n');
+                    setPaymentStatus('error');
+                    setPaymentMessage(errorMessages || 'Validasi gagal. Periksa kembali data pesanan Anda.');
+                } else {
+                    // Error non-validasi (403, 500, dll)
+                    const errMsg = data?.message ?? 'Terjadi kesalahan saat memproses pesanan.';
+                    setPaymentStatus('error');
+                    setPaymentMessage(errMsg);
+                }
                 setIsSubmitting(false);
                 return;
             }
@@ -474,6 +543,8 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
             });
 
         } catch (networkError) {
+            // Catch block ini HANYA untuk kegagalan jaringan sesungguhnya
+            // (DNS gagal, server tidak bisa dihubungi, CORS, dll.)
             console.error('[Checkout] Network error:', networkError);
             setPaymentStatus('error');
             setPaymentMessage('Gagal terhubung ke server. Periksa koneksi internet Anda.');
@@ -741,9 +812,9 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                         />
 
                         {/* Container Modal */}
-                        <div className="relative w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl animate-slide-up max-h-[90vh] flex flex-col overflow-hidden">
+                        <div className="relative w-full sm:max-w-lg bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl animate-slide-up max-h-[90vh] flex flex-col transform-gpu">
                             {/* Header — Premium Dark Style */}
-                            <div className="bg-gray-950 px-6 sm:px-8 pt-6 pb-5 shrink-0 relative overflow-hidden">
+                            <div className="bg-gray-950 px-6 sm:px-8 pt-6 pb-5 shrink-0 relative overflow-hidden rounded-t-3xl sm:rounded-t-3xl">
                                 {/* Decorative gradient */}
                                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#7a0000] via-[#990000] to-yellow-400" />
 
@@ -903,7 +974,7 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
 
                                         {/* Input 1b: Jumlah Orang — HANYA tampil saat Dine In */}
                                         {tipeLayanan === 'dine_in' && (
-                                            <div className="animate-fade-in bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                                            <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 transition-all duration-300">
                                                 <label
                                                     htmlFor="jumlah-orang"
                                                     className="block text-[10px] font-bold uppercase tracking-[0.3em] text-[#990000] mb-3"
@@ -963,37 +1034,99 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                                             </div>
                                         )}
 
-                                        {/* Input 2: Jam Kedatangan */}
-                                        <div>
-                                            <label className="block text-[10px] font-bold uppercase tracking-[0.3em] text-[#990000] mb-1">
-                                                Jam Kedatangan (Opsional)
+                                        {/* Input 2: Waktu Pengambilan */}
+                                        <div className="mb-6">
+                                            <label className="block text-[10px] font-bold uppercase tracking-[0.3em] text-[#990000] mb-3">
+                                                Waktu Pengambilan
                                             </label>
-                                            <p className="text-xs text-gray-500 font-medium mb-3">
-                                                Dikosongkan jika pesanan ingin langsung diproses
-                                                sekarang.
-                                            </p>
-                                            <input
-                                                type="time"
-                                                value={waktuKedatangan}
-                                                onChange={handleTimeChange}
-                                                className={`w-full px-0 py-3 bg-transparent border-0 border-b-2 text-lg font-bold text-gray-900 focus:ring-0 transition-colors ${
-                                                    timeError
-                                                        ? 'border-red-500 focus:border-red-500'
-                                                        : 'border-gray-300 focus:border-[#990000]'
-                                                }`}
-                                            />
-                                            {timeError && (
-                                                <p className="text-[#990000] text-xs font-bold mt-2">
-                                                    {timeError}
+
+                                            <div className="grid grid-cols-2 gap-3 mb-3">
+                                                <label
+                                                    className={`flex flex-col items-center justify-center py-3 px-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
+                                                        tipeWaktu === 'hari_ini'
+                                                            ? 'border-[#990000] bg-[#fff0f0] text-[#990000] shadow-md shadow-[#990000]/10'
+                                                            : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:border-gray-300'
+                                                    }`}
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name="tipe_waktu"
+                                                        value="hari_ini"
+                                                        className="sr-only"
+                                                        checked={tipeWaktu === 'hari_ini'}
+                                                        onChange={() => {
+                                                            setTipeWaktu('hari_ini');
+                                                            setWaktuKedatangan('');
+                                                            setTimeError(null);
+                                                        }}
+                                                    />
+                                                    <span className="font-bold text-sm">Hari Ini</span>
+                                                </label>
+
+                                                <label
+                                                    className={`flex flex-col items-center justify-center py-3 px-4 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
+                                                        tipeWaktu === 'po'
+                                                            ? 'border-[#990000] bg-[#fff0f0] text-[#990000] shadow-md shadow-[#990000]/10'
+                                                            : 'border-gray-200 bg-white text-gray-500 hover:bg-gray-50 hover:border-gray-300'
+                                                    }`}
+                                                >
+                                                    <input
+                                                        type="radio"
+                                                        name="tipe_waktu"
+                                                        value="po"
+                                                        className="sr-only"
+                                                        checked={tipeWaktu === 'po'}
+                                                        onChange={() => {
+                                                            setTipeWaktu('po');
+                                                            setWaktuKedatangan('');
+                                                            setTimeError(null);
+                                                        }}
+                                                    />
+                                                    <span className="font-bold text-sm">Pre-Order (PO)</span>
+                                                </label>
+                                            </div>
+
+                                            <div className="mt-3 p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-all duration-300">
+                                                <p className="text-xs text-gray-500 font-medium mb-3">
+                                                    {tipeWaktu === 'hari_ini' ? 'Tentukan jam kedatangan Anda hari ini.' : 'Tentukan tanggal & jam untuk pesanan esok hari atau lusa.'}
                                                 </p>
-                                            )}
-                                            <p className="text-[11px] font-bold text-yellow-600 mt-2 bg-yellow-50 inline-block px-2.5 py-1 rounded-full">
-                                                Min. {getMinTimeStr()} WIB (Waktu Persiapan)
-                                            </p>
+                                                {tipeWaktu === 'hari_ini' ? (
+                                                    <input
+                                                        type="time"
+                                                        value={waktuKedatangan}
+                                                        min={minWaktuHariIni()}
+                                                        onChange={handleTimeChange}
+                                                        className={`w-full px-0 py-2 bg-transparent border-0 border-b-2 text-lg font-bold text-gray-900 focus:ring-0 transition-colors ${
+                                                            timeError
+                                                                ? 'border-red-500 focus:border-red-500'
+                                                                : 'border-gray-300 focus:border-[#990000]'
+                                                        }`}
+                                                        required
+                                                    />
+                                                ) : (
+                                                    <input
+                                                        type="datetime-local"
+                                                        value={waktuKedatangan}
+                                                        min={minTanggalPO()}
+                                                        onChange={handleTimeChange}
+                                                        className={`w-full px-0 py-2 bg-transparent border-0 border-b-2 text-lg font-bold text-gray-900 focus:ring-0 transition-colors ${
+                                                            timeError
+                                                                ? 'border-red-500 focus:border-red-500'
+                                                                : 'border-gray-300 focus:border-[#990000]'
+                                                        }`}
+                                                        required
+                                                    />
+                                                )}
+                                                {timeError && (
+                                                    <p className="text-[#990000] text-xs font-bold mt-2">
+                                                        {timeError}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* Input 3: Metode Pembayaran */}
-                                        <div>
+                                        <div className="mb-2">
                                             <label className="block text-[10px] font-bold uppercase tracking-[0.3em] text-[#990000] mb-3">
                                                 Metode Pembayaran
                                             </label>

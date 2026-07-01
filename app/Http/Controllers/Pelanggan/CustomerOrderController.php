@@ -79,7 +79,7 @@ class CustomerOrderController extends Controller
             'items.*.jumlah'        => ['required', 'integer', 'min:1'],
             'items.*.harga'         => ['required', 'numeric', 'min:0'],
             'tipe_pesanan'          => ['required', 'in:dine_in,take_away'],
-            'waktu_pengambilan'     => ['nullable', 'string'],
+            'waktu_pengambilan'     => ['nullable', 'required_if:tipe_pesanan,take_away,online', 'date', 'after:now'],
             'metode_pembayaran'     => ['required', 'in:Transfer Bank,QRIS'],
             // jumlah_orang: wajib diisi saat Dine In, diabaikan saat Take Away
             'jumlah_orang'          => [
@@ -90,12 +90,17 @@ class CustomerOrderController extends Controller
             ],
         ]);
 
-        // Format waktu pengambilan (jam kedatangan hari ini)
+        // Format waktu pengambilan (jam kedatangan)
         $waktuPengambilan = null;
         if (!empty($validated['waktu_pengambilan'])) {
-            $waktuPengambilan = Carbon::createFromFormat('H:i', $validated['waktu_pengambilan'])->setDate(
-                now()->year, now()->month, now()->day
-            );
+            $waktuPengambilan = Carbon::parse($validated['waktu_pengambilan']);
+            
+            // Proteksi ganda: tolak jika masa lalu (meski after:now di form request sudah ada)
+            if ($waktuPengambilan->isPast()) {
+                throw ValidationException::withMessages([
+                    'waktu_pengambilan' => 'Waktu pengambilan minimal harus melewati waktu saat ini.'
+                ]);
+            }
         }
 
         DB::beginTransaction();
