@@ -52,26 +52,42 @@ class OrderManagementController extends Controller
 
         $status = $request->input('status');
 
-        $orders = Order::query()
+        // ─── 1. Pesanan Hari Ini ───
+        $pesanan_hari_ini = Order::query()
             ->with(['user:id,name,email,no_hp', 'orderItems.menu:id,nama_menu,harga', 'payment'])
-            // ── Scope: Hari Ini + Pesanan Menggantung (dari hari sebelumnya) ──
+            ->where(function ($query) {
+                // Termasuk pesanan dengan waktu_pengambilan hari ini atau sebelumnya, ATAU yang tidak punya waktu spesifik
+                $query->whereDate('waktu_pengambilan', '<=', Carbon::today())
+                      ->orWhereNull('waktu_pengambilan');
+            })
             ->where(function ($query) {
                 $query
-                    // Pesanan yang dibuat hari ini
                     ->whereDate('created_at', Carbon::today())
-                    // ATAU pesanan dari hari sebelumnya yang statusnya masih aktif/belum selesai
                     ->orWhereIn('status_pesanan', ['menunggu_pembayaran', 'diproses']);
             })
             ->when($status, function ($query, $status) {
                 $query->where('status_pesanan', $status);
             })
             ->latest('tanggal_pesan')
-            ->paginate(15)
+            ->paginate(15, ['*'], 'page_hari_ini')
+            ->withQueryString();
+
+        // ─── 2. Pesanan Pre-Order (PO) Mendatang ───
+        $pesanan_po_mendatang = Order::query()
+            ->with(['user:id,name,email,no_hp', 'orderItems.menu:id,nama_menu,harga', 'payment'])
+            ->whereDate('waktu_pengambilan', '>', Carbon::today())
+            ->whereIn('status_pesanan', ['menunggu_pembayaran', 'diproses'])
+            ->when($status, function ($query, $status) {
+                $query->where('status_pesanan', $status);
+            })
+            ->latest('tanggal_pesan')
+            ->paginate(15, ['*'], 'page_po')
             ->withQueryString();
 
         return Inertia::render('Kasir/Orders/Index', [
-            'orders'  => OrderResource::collection($orders),
-            'filters' => ['status' => $status],
+            'pesanan_hari_ini'     => OrderResource::collection($pesanan_hari_ini),
+            'pesanan_po_mendatang' => OrderResource::collection($pesanan_po_mendatang),
+            'filters'              => ['status' => $status],
         ]);
     }
 

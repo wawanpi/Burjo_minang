@@ -72,7 +72,12 @@ interface PaginationLink {
 }
 
 interface Props {
-    orders: {
+    pesanan_hari_ini: {
+        data: Order[];
+        links: PaginationLink[];
+        total?: number;
+    };
+    pesanan_po_mendatang: {
         data: Order[];
         links: PaginationLink[];
         total?: number;
@@ -170,7 +175,7 @@ function PaymentBadge({ payment, align = 'center' }: { payment?: Payment | null;
     );
 }
 
-function ItemList({ items, max = 3 }: { items?: OrderItem[]; max?: number }) {
+function ItemList({ items, max = 3, onShowAll }: { items?: OrderItem[]; max?: number; onShowAll?: () => void }) {
     const list = items || [];
     const shown = list.slice(0, max);
     const rest = list.length - shown.length;
@@ -184,9 +189,16 @@ function ItemList({ items, max = 3 }: { items?: OrderItem[]; max?: number }) {
             ))}
             {rest > 0 && (
                 <li>
-                    <span className="inline-flex items-center rounded-md bg-bm-cream px-1.5 py-0.5 text-[10px] font-semibold text-bm-text-muted ring-1 ring-black/[0.04]">
+                    <button
+                        type="button"
+                        onClick={onShowAll}
+                        className="inline-flex items-center gap-1 rounded-md bg-bm-cream px-1.5 py-0.5 text-[10px] font-semibold text-bm-text-muted ring-1 ring-black/[0.04] cursor-pointer hover:bg-bm-gold-100 hover:text-bm-charcoal-800 hover:ring-bm-gold-300 transition-all duration-200"
+                    >
                         +{rest} item lainnya
-                    </span>
+                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                        </svg>
+                    </button>
                 </li>
             )}
         </ul>
@@ -194,15 +206,30 @@ function ItemList({ items, max = 3 }: { items?: OrderItem[]; max?: number }) {
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
-export default function OrderIndex({ orders, filters }: Props) {
+export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, filters }: Props) {
     const { flash } = usePage().props as any;
     const [selectedStatus, setSelectedStatus] = useState(filters?.status || '');
+    const [activeTab, setActiveTab] = useState<'hari_ini' | 'po'>('hari_ini');
     
     // ─── AUDIO ALERTS STATE ────────────────────────────────────────────────────
     const [alerted10Min, setAlerted10Min] = useState<number[]>([]);
     const [alerted5Min, setAlerted5Min] = useState<number[]>([]);
 
-    const orderData = orders?.data || [];
+    // ─── MODAL DETAIL PESANAN STATE ───────────────────────────────────────────
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const openDetailModal = (order: Order) => {
+        setSelectedOrder(order);
+        setIsModalOpen(true);
+    };
+
+    const closeDetailModal = () => {
+        setIsModalOpen(false);
+        setTimeout(() => setSelectedOrder(null), 200); // Bersihkan setelah animasi tutup
+    };
+
+    const orderData = activeTab === 'po' ? pesanan_po_mendatang.data : pesanan_hari_ini.data;
 
     // Logika Evaluasi Waktu & Audio
     useEffect(() => {
@@ -403,7 +430,18 @@ export default function OrderIndex({ orders, filters }: Props) {
         if (order.status_pesanan === 'batal') {
             return (
                 <div className={wrap}>
-                    <span className="text-xs text-gray-300 italic">—</span>
+                    <button
+                        onClick={() => openDetailModal(order)}
+                        aria-label={`Lihat detail pesanan #${order.id}`}
+                        title="Detail Pesanan"
+                        className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-gray-200 bg-white text-xs font-semibold text-gray-400 hover:bg-gray-50 hover:text-gray-600 hover:border-gray-300 transition-colors whitespace-nowrap"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                        <span className={variant === 'table' ? 'hidden 2xl:inline' : ''}>Detail</span>
+                    </button>
                 </div>
             );
         }
@@ -434,6 +472,20 @@ export default function OrderIndex({ orders, filters }: Props) {
                     </select>
                 ) : null}
 
+                {/* Tombol Detail Pesanan */}
+                <button
+                    onClick={() => openDetailModal(order)}
+                    aria-label={`Lihat detail pesanan #${order.id}`}
+                    title="Detail Pesanan"
+                    className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-sky-200 bg-sky-50 text-xs font-semibold text-sky-700 hover:bg-sky-600 hover:text-white hover:border-sky-600 transition-colors whitespace-nowrap"
+                >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    <span className={variant === 'table' ? 'hidden 2xl:inline' : ''}>Detail</span>
+                </button>
+
                 {order.status_pesanan !== 'menunggu_pembayaran' && (
                     <button
                         onClick={() => handlePrintNota(order.id)}
@@ -462,7 +514,7 @@ export default function OrderIndex({ orders, filters }: Props) {
         </span>
     );
 
-    const paginationLinks = orders?.links || [];
+    const paginationLinks = activeTab === 'po' ? pesanan_po_mendatang.links : pesanan_hari_ini.links;
 
     return (
         <OwnerLayout title="Manajemen Pesanan">
@@ -490,28 +542,57 @@ export default function OrderIndex({ orders, filters }: Props) {
                 </div>
             )}
 
-            {/* Header + Filter */}
-            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between animate-page-enter">
-                <div>
-                    <span className="bm-eyebrow block mb-1.5">Operasional</span>
-                    <div className="flex items-center gap-2.5">
-                        <span className="text-bm-gold-500 text-lg leading-none select-none">✦</span>
-                        <h1 className="text-2xl lg:text-[28px] font-serif font-bold text-bm-charcoal-900 leading-tight">Daftar Pesanan</h1>
+            {/* Header + Tabs + Filter */}
+            <div className="mb-6 flex flex-col gap-5 animate-page-enter">
+                {/* Bagian Atas: Judul & Tab */}
+                <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+                    <div>
+                        <span className="bm-eyebrow block mb-1.5">Operasional</span>
+                        <div className="flex items-center gap-2.5">
+                            <span className="text-bm-gold-500 text-lg leading-none select-none">✦</span>
+                            <h1 className="text-2xl lg:text-[28px] font-serif font-bold text-bm-charcoal-900 leading-tight">Daftar Pesanan</h1>
+                        </div>
+                        <div className="bm-gold-underline mt-3" />
+                        <div className="mt-3">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-bm-charcoal-900 px-3 py-1 text-xs font-semibold text-white">
+                                <span className="text-bm-gold-400">✦</span>
+                                {(activeTab === 'po' ? pesanan_po_mendatang.total : pesanan_hari_ini.total) || orderData.length} pesanan ditemukan
+                            </span>
+                        </div>
                     </div>
-                    <div className="bm-gold-underline mt-3" />
-                    <div className="mt-3">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-bm-charcoal-900 px-3 py-1 text-xs font-semibold text-white">
-                            <span className="text-bm-gold-400">✦</span>
-                            {orders?.total || orderData.length} pesanan ditemukan
-                        </span>
+
+                    {/* Tabs: Hari Ini vs PO */}
+                    <div className="flex items-center gap-2 bg-gray-100 p-1 rounded-xl w-fit shrink-0">
+                        <button
+                            onClick={() => setActiveTab('hari_ini')}
+                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                                activeTab === 'hari_ini'
+                                    ? 'bg-white text-bm-red-600 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                            Antrean Hari Ini
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('po')}
+                            className={`px-4 py-2 text-sm font-bold rounded-lg transition-all ${
+                                activeTab === 'po'
+                                    ? 'bg-white text-bm-red-600 shadow-sm'
+                                    : 'text-gray-500 hover:text-gray-700'
+                            }`}
+                        >
+                            PO Mendatang
+                        </button>
                     </div>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
+
+                {/* Bagian Bawah: Filter Status */}
+                <div className="flex items-center gap-2 flex-wrap justify-start">
                     <button
                         onClick={() => handleFilterStatus('')}
                         className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                             selectedStatus === ''
-                                ? `${filterActiveColor['']} shadow-soft`
+                                ? 'bg-bm-charcoal-900 text-white shadow-soft'
                                 : 'bg-white border border-gray-300 text-bm-text-muted hover:bg-bm-cream'
                         }`}
                     >
@@ -580,7 +661,7 @@ export default function OrderIndex({ orders, filters }: Props) {
                                                 <div className="text-xs text-gray-500 truncate">{order.user?.no_hp || order.user?.email || '-'}</div>
                                             </td>
                                             <td className="px-4 py-4 align-top">
-                                                <ItemList items={order.order_items} />
+                                                <ItemList items={order.order_items} onShowAll={() => openDetailModal(order)} />
                                             </td>
                                             <td className="px-4 py-4 align-top text-right text-sm font-bold text-bm-red-600 whitespace-nowrap">
                                                 {formatRupiah(order.total_harga)}
@@ -633,7 +714,7 @@ export default function OrderIndex({ orders, filters }: Props) {
                                     </div>
 
                                     <div className="rounded-xl bg-bm-cream/60 p-3">
-                                        <ItemList items={order.order_items} />
+                                        <ItemList items={order.order_items} onShowAll={() => openDetailModal(order)} />
                                     </div>
 
                                     <div className="flex items-end justify-between gap-3">
@@ -676,6 +757,151 @@ export default function OrderIndex({ orders, filters }: Props) {
                 </div>
             )}
             </div>
+
+            {/* ═══════════════════════════════════════════════════════════════════
+                MODAL DETAIL PESANAN
+                ═══════════════════════════════════════════════════════════════════ */}
+            {isModalOpen && selectedOrder && (
+                <div
+                    className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="detail-modal-title"
+                >
+                    {/* Overlay */}
+                    <div
+                        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-[fadeIn_200ms_ease-out]"
+                        onClick={closeDetailModal}
+                    />
+
+                    {/* Modal Container */}
+                    <div className="relative w-full max-w-lg max-h-[85vh] flex flex-col bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 animate-[slideUp_300ms_ease-out] overflow-hidden">
+
+                        {/* ── Header ──────────────────────────────────────────── */}
+                        <div className="shrink-0 bg-gradient-to-r from-bm-charcoal-900 to-bm-charcoal-800 px-6 py-5">
+                            <div className="flex items-start justify-between gap-3">
+                                <div>
+                                    <div className="flex items-center gap-2.5 mb-1">
+                                        <span className="text-bm-gold-400 text-sm leading-none select-none">✦</span>
+                                        <h2 id="detail-modal-title" className="text-lg font-serif font-bold text-white">
+                                            Pesanan #{selectedOrder.id}
+                                        </h2>
+                                        <StatusBadge status={selectedOrder.status_pesanan} />
+                                    </div>
+                                    <p className="text-sm text-gray-300">
+                                        {selectedOrder.user?.name || 'Guest'}
+                                        {selectedOrder.user?.no_hp && (
+                                            <span className="ml-2 text-gray-400">· {selectedOrder.user.no_hp}</span>
+                                        )}
+                                    </p>
+                                    <div className="flex items-center gap-2 mt-2">
+                                        {renderTipeChip(selectedOrder)}
+                                        <PaymentBadge payment={selectedOrder.payment} align="start" />
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={closeDetailModal}
+                                    className="shrink-0 p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors"
+                                    aria-label="Tutup modal"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* ── Body: Daftar Item (scrollable) ──────────────────── */}
+                        <div className="flex-1 overflow-y-auto custom-scrollbar px-6 py-4">
+                            {/* Waktu Info */}
+                            <div className="flex items-center gap-2 mb-4 text-xs text-gray-500">
+                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Dipesan: {formatTanggalShort(selectedOrder.tanggal_pesan)}</span>
+                                {selectedOrder.waktu_pengambilan && (
+                                    <>
+                                        <span className="text-gray-300">·</span>
+                                        <span className="text-purple-600 font-medium">Ambil: {formatTanggalShort(selectedOrder.waktu_pengambilan)}</span>
+                                    </>
+                                )}
+                            </div>
+
+                            <div className="text-[10px] font-bold uppercase tracking-[0.15em] text-gray-400 mb-3">
+                                Daftar Item ({selectedOrder.order_items?.length || 0})
+                            </div>
+
+                            <div className="space-y-0 divide-y divide-gray-100">
+                                {(selectedOrder.order_items || []).map((item, i) => {
+                                    const nama = item.menu?.nama_menu || 'Menu Dihapus';
+                                    const harga = item.menu?.harga || 0;
+                                    return (
+                                        <div
+                                            key={item.id || i}
+                                            className="flex items-center gap-3 py-3 group"
+                                        >
+                                            {/* Nomor urut */}
+                                            <span className="shrink-0 w-6 h-6 flex items-center justify-center rounded-full bg-bm-cream text-[10px] font-bold text-bm-text-muted ring-1 ring-black/[0.04]">
+                                                {i + 1}
+                                            </span>
+
+                                            {/* Nama & harga satuan */}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium text-gray-900 truncate group-hover:text-bm-red-600 transition-colors">
+                                                    {nama}
+                                                </p>
+                                                <p className="text-xs text-gray-400">
+                                                    {formatRupiah(harga)} × {item.jumlah}
+                                                </p>
+                                            </div>
+
+                                            {/* Subtotal */}
+                                            <span className="shrink-0 text-sm font-bold text-gray-800 tabular-nums">
+                                                {formatRupiah(item.subtotal)}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
+
+                                {(!selectedOrder.order_items || selectedOrder.order_items.length === 0) && (
+                                    <div className="py-8 text-center text-gray-400 text-sm italic">
+                                        Tidak ada item pesanan.
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* ── Footer: Total & Aksi ────────────────────────────── */}
+                        <div className="shrink-0 border-t border-gray-200 bg-bm-cream/40 px-6 py-4">
+                            <div className="flex items-center justify-between mb-4">
+                                <span className="text-sm font-semibold text-gray-500">Total Pembayaran</span>
+                                <span className="text-xl font-bold text-bm-red-600">
+                                    {formatRupiah(selectedOrder.total_harga)}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                {selectedOrder.status_pesanan !== 'menunggu_pembayaran' && (
+                                    <button
+                                        onClick={() => { closeDetailModal(); handlePrintNota(selectedOrder.id); }}
+                                        className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-bm-charcoal-800/15 bg-white text-sm font-semibold text-bm-charcoal-800 hover:bg-bm-charcoal-900 hover:text-white hover:border-bm-charcoal-900 transition-colors"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                        </svg>
+                                        Cetak Nota
+                                    </button>
+                                )}
+                                <button
+                                    onClick={closeDetailModal}
+                                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-bm-charcoal-900 text-sm font-semibold text-white hover:bg-bm-charcoal-800 transition-colors"
+                                >
+                                    Tutup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </OwnerLayout>
     );
 }
