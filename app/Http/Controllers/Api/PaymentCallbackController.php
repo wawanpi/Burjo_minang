@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Menu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 /**
  * PaymentCallbackController — Webhook handler untuk notifikasi Midtrans.
@@ -110,116 +111,102 @@ class PaymentCallbackController extends Controller
             'trx_status'   => $transaction,
         ]);
 
-        // ── 3. Cari Order di Database ─────────────────────────────────────────
-        $order = Order::find($db_order_id);
+        // ── 3. Cari Order di Database dengan Pessimistic Lock ─────────────────
+        // Gunakan DB Transaction + lockForUpdate untuk mencegah race condition
+        // jika Midtrans mengirim webhook duplikat secara bersamaan
+        return DB::transaction(function () use ($db_order_id, $order_id_raw, $transaction, $type, $fraud, $sumber) {
+            
+            $order = Order::lockForUpdate()->find($db_order_id);
 
-        if (!$order) {
-            Log::error('Midtrans Webhook: Order tidak ditemukan di database', [
-                'order_id_raw' => $order_id_raw,
-                'db_order_id'  => $db_order_id,
-            ]);
-            return response()->json(['message' => 'Order not found'], 404);
-        }
-
-        // Ambil relasi payment jika sudah ada
-        $payment = Payment::where('order_id', $order->id)->first();
-
-        // Simpan status saat ini sebagai baseline
-        $orderStatus   = $order->status_pesanan;
-        $paymentStatus = $payment ? $payment->status_pembayaran : 'pending';
-
-        // --- SECURITY FIX: STATE MACHINE PENCEGAHAN LINTAS STATUS ---
-        // Cegah webhook (yang mungkin telat datang) membangkitkan pesanan yang sudah final
-        if (in_array($orderStatus, ['batal', 'selesai'])) {
-            Log::info('Midtrans Webhook: Diabaikan karena pesanan sudah final (batal/selesai)', [
-                'order_id'       => $order->id,
-                'status_pesanan' => $orderStatus
-            ]);
-            return response()->json(['message' => 'Order is already in final state']);
-        }
-
-        // ── 4. Peta Status: transaction_status Midtrans → status internal ─────
-        //
-        //  Referensi: https://docs.midtrans.com/reference/transaction-status
-        //
-        //  capture    → kartu kredit berhasil di-capture (fraud check OK)
-        //  settlement → pembayaran dikonfirmasi masuk (QRIS, VA, dll)
-        //  pending    → menunggu aksi pelanggan (VA belum ditransfer, dll)
-        //  deny       → ditolak oleh bank / fraud detection
-        //  expire     → melewati batas waktu pembayaran
-        //  cancel     → dibatalkan oleh merchant atau pelanggan
-
-        switch ($transaction) {
-            case 'capture':
-                // Hanya berlaku untuk credit_card
-                if ($type === 'credit_card') {
-                    if ($fraud === 'challenge') {
-                        // Perlu verifikasi manual di dashboard Midtrans
-                        $paymentStatus = 'pending';
-                    } else {
-                        $paymentStatus = 'lunas';
-                        $orderStatus   = 'diproses';
-                    }
-                }
-                break;
-
-            case 'settlement':
-                // Pembayaran berhasil dikonfirmasi (QRIS, VA, GoPay, dll)
-                $paymentStatus = 'lunas';
-                $orderStatus   = 'diproses';
-                break;
-
-            case 'pending':
-                // Pelanggan belum menyelesaikan pembayaran (VA belum ditransfer)
-                $paymentStatus = 'pending';
-                // Jangan ubah status order — biarkan tetap 'menunggu_pembayaran'
-                break;
-
-            case 'deny':
-            case 'expire':
-            case 'cancel':
-                $paymentStatus = 'gagal';
-                $orderStatus   = 'batal';
-
-                // --- RESTOCK LOGIC ---
-                // Pastikan order yang belum dibatalkan sebelumnya yang di-restock
-                // untuk menghindari restock ganda jika Midtrans mengirim webhook berulang
-                if ($order->status_pesanan !== 'batal') {
-                    foreach ($order->orderItems as $item) {
-                        Menu::where('id', $item->menu_id)->increment('stok', $item->jumlah);
-                    }
-                    Log::info('Midtrans Webhook: Restock item berhasil karena pesanan batal/expired', ['order_id' => $order->id]);
-                }
-                break;
-
-            default:
-                // Status tidak dikenal — log saja, jangan ubah data
-                Log::warning('Midtrans Webhook: transaction_status tidak dikenal', [
-                    'transaction_status' => $transaction,
-                    'order_id_raw'       => $order_id_raw,
+            if (!$order) {
+                Log::error('Midtrans Webhook: Order tidak ditemukan di database', [
+                    'order_id_raw' => $order_id_raw,
+                    'db_order_id'  => $db_order_id,
                 ]);
-                break;
-        }
+                return response()->json(['message' => 'Order not found'], 404);
+            }
 
-        // ── 5. Simpan Pembaruan ke Database ───────────────────────────────────
-        $order->update(['status_pesanan' => $orderStatus]);
+            // Ambil relasi payment jika sudah ada
+            $payment = Payment::lockForUpdate()->where('order_id', $order->id)->first();
 
-        if ($payment) {
-            $payment->update(['status_pembayaran' => $paymentStatus]);
-        }
+            // Simpan status saat ini sebagai baseline
+            $orderStatus   = $order->status_pesanan;
+            $paymentStatus = $payment ? $payment->status_pembayaran : 'pending';
 
-        Log::info('Midtrans Webhook: Status berhasil diperbarui', [
-            'order_id_raw'        => $order_id_raw,
-            'db_order_id'         => $db_order_id,
-            'sumber'              => $sumber,
-            'transaction_status'  => $transaction,
-            'order_status_baru'   => $orderStatus,
-            'payment_status_baru' => $paymentStatus,
-        ]);
+            // --- SECURITY FIX: STATE MACHINE PENCEGAHAN LINTAS STATUS ---
+            // Cegah webhook (yang mungkin telat datang) membangkitkan pesanan yang sudah final
+            if (in_array($orderStatus, ['batal', 'selesai'])) {
+                Log::info('Midtrans Webhook: Diabaikan karena pesanan sudah final (batal/selesai)', [
+                    'order_id'       => $order->id,
+                    'status_pesanan' => $orderStatus
+                ]);
+                return response()->json(['message' => 'Order is already in final state']);
+            }
 
-        // ── 6. Response HTTP 200 — WAJIB ─────────────────────────────────────
-        // Midtrans menghentikan retry hanya jika menerima HTTP 2xx.
-        // Jika response bukan 2xx, Midtrans akan retry hingga 7x dalam 24 jam.
-        return response()->json(['message' => 'OK']);
+            // ── 4. Peta Status: transaction_status Midtrans → status internal ─────
+            switch ($transaction) {
+                case 'capture':
+                    if ($type === 'credit_card') {
+                        if ($fraud === 'challenge') {
+                            $paymentStatus = 'pending';
+                        } else {
+                            $paymentStatus = 'lunas';
+                            $orderStatus   = 'diproses';
+                        }
+                    }
+                    break;
+
+                case 'settlement':
+                    $paymentStatus = 'lunas';
+                    $orderStatus   = 'diproses';
+                    break;
+
+                case 'pending':
+                    $paymentStatus = 'pending';
+                    break;
+
+                case 'deny':
+                case 'expire':
+                case 'cancel':
+                    $paymentStatus = 'gagal';
+                    $orderStatus   = 'batal';
+
+                    // --- RESTOCK LOGIC ---
+                    // Karena sudah di dalam lockForUpdate, pengecekan ini kebal dari race condition
+                    if ($order->status_pesanan !== 'batal') {
+                        foreach ($order->orderItems as $item) {
+                            Menu::where('id', $item->menu_id)->increment('stok', $item->jumlah);
+                        }
+                        Log::info('Midtrans Webhook: Restock item berhasil karena pesanan batal/expired', ['order_id' => $order->id]);
+                    }
+                    break;
+
+                default:
+                    Log::warning('Midtrans Webhook: transaction_status tidak dikenal', [
+                        'transaction_status' => $transaction,
+                        'order_id_raw'       => $order_id_raw,
+                    ]);
+                    break;
+            }
+
+            // ── 5. Simpan Pembaruan ke Database ───────────────────────────────────
+            $order->update(['status_pesanan' => $orderStatus]);
+
+            if ($payment) {
+                $payment->update(['status_pembayaran' => $paymentStatus]);
+            }
+
+            Log::info('Midtrans Webhook: Status berhasil diperbarui', [
+                'order_id_raw'        => $order_id_raw,
+                'db_order_id'         => $db_order_id,
+                'sumber'              => $sumber,
+                'transaction_status'  => $transaction,
+                'order_status_baru'   => $orderStatus,
+                'payment_status_baru' => $paymentStatus,
+            ]);
+
+            // ── 6. Response HTTP 200 — WAJIB ─────────────────────────────────────
+            return response()->json(['message' => 'OK']);
+        }); // Tutup DB::transaction
     }
 }
