@@ -11,4 +11,8 @@ export default defineConfig({
         }),
         react(),
     ],
+    // Disable Vite's auto-injected CSP nonce so Midtrans Snap.js inline scripts work
+    html: {
+        cspNonce: false,
+    },
 });
