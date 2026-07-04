@@ -20,9 +20,10 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'owner@burjominang.com'],
             [
-                'name'     => 'Owner Burjo Minang',
-                'password' => Hash::make('password123'),
-                'role'     => 'owner',
+                'name'              => 'Owner Burjo Minang',
+                'password'          => Hash::make('password123'),
+                'role'              => 'owner',
+                'email_verified_at' => now(),
             ]
         );
 
@@ -30,9 +31,10 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'kasir@burjominang.com'],
             [
-                'name'     => 'kasir Satu',
-                'password' => Hash::make('password123'),
-                'role'     => 'kasir',
+                'name'              => 'kasir Satu',
+                'password'          => Hash::make('password123'),
+                'role'              => 'kasir',
+                'email_verified_at' => now(),
             ]
         );
 
@@ -40,10 +42,23 @@ class DatabaseSeeder extends Seeder
         User::firstOrCreate(
             ['email' => 'pelanggan@gmail.com'],
             [
-                'name'     => 'Pelanggan Setia',
-                'password' => Hash::make('password123'),
-                'role'     => 'pelanggan',
+                'name'              => 'Pelanggan Setia',
+                'password'          => Hash::make('password123'),
+                'role'              => 'pelanggan',
+                'email_verified_at' => now(),
             ]
         );
+
+        // Pastikan akun default SELALU terverifikasi — termasuk yang sudah
+        // terlanjur dibuat sebelum fitur verifikasi email diaktifkan
+        // (firstOrCreate tidak meng-update baris yang sudah ada).
+        User::whereIn('email', [
+            'owner@burjominang.com',
+            'kasir@burjominang.com',
+            'pelanggan@gmail.com',
+        ])->whereNull('email_verified_at')->update(['email_verified_at' => now()]);
+
+        // Seed daftar menu awal
+        $this->call(MenuSeeder::class);
     }
 }
