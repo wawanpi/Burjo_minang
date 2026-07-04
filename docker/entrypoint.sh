@@ -15,6 +15,10 @@ php artisan view:cache
 echo "==> Menjalankan migrasi database..."
 php artisan migrate --force
 
+# Jalankan seeder akun default (idempotent, aman diulang tiap deploy).
+echo "==> Menjalankan seeder akun default..."
+php artisan db:seed --force
+
 # Jalankan web server. Railway menyediakan $PORT secara otomatis.
 echo "==> Menjalankan server di port ${PORT:-8080}..."
 exec php artisan serve --host=0.0.0.0 --port="${PORT:-8080}"

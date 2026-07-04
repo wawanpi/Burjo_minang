@@ -14,6 +14,16 @@ COPY package.json package-lock.json ./
 RUN npm ci --legacy-peer-deps
 
 COPY . .
+
+# Variabel VITE_* "dibakar" ke bundle saat build, jadi harus ada di tahap ini.
+# Railway meneruskan service variable menjadi build-arg secara otomatis.
+ARG VITE_APP_NAME="Burjo Minang RM"
+ARG VITE_MIDTRANS_CLIENT_KEY
+ARG VITE_MIDTRANS_IS_PRODUCTION=false
+ENV VITE_APP_NAME=$VITE_APP_NAME \
+    VITE_MIDTRANS_CLIENT_KEY=$VITE_MIDTRANS_CLIENT_KEY \
+    VITE_MIDTRANS_IS_PRODUCTION=$VITE_MIDTRANS_IS_PRODUCTION
+
 # Build hanya bundle client (bukan --ssr)
 RUN npx vite build
 

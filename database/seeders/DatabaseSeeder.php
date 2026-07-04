@@ -13,28 +13,37 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Gunakan firstOrCreate agar idempotent: aman dijalankan berulang
+        // (mis. otomatis tiap deploy) tanpa error duplikat email.
+
         // 1. Buat akun Owner
-        User::create([
-            'name'     => 'Owner Burjo Minang',
-            'email'    => 'owner@burjominang.com',
-            'password' => Hash::make('password123'),
-            'role'     => 'owner',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'owner@burjominang.com'],
+            [
+                'name'     => 'Owner Burjo Minang',
+                'password' => Hash::make('password123'),
+                'role'     => 'owner',
+            ]
+        );
 
         // 2. Buat akun kasir
-        User::create([
-            'name'     => 'kasir Satu',
-            'email'    => 'kasir@burjominang.com',
-            'password' => Hash::make('password123'),
-            'role'     => 'kasir',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'kasir@burjominang.com'],
+            [
+                'name'     => 'kasir Satu',
+                'password' => Hash::make('password123'),
+                'role'     => 'kasir',
+            ]
+        );
 
         // 3. Buat akun Pelanggan
-        User::create([
-            'name'     => 'Pelanggan Setia',
-            'email'    => 'pelanggan@gmail.com',
-            'password' => Hash::make('password123'),
-            'role'     => 'pelanggan',
-        ]);
+        User::firstOrCreate(
+            ['email' => 'pelanggan@gmail.com'],
+            [
+                'name'     => 'Pelanggan Setia',
+                'password' => Hash::make('password123'),
+                'role'     => 'pelanggan',
+            ]
+        );
     }
 }
