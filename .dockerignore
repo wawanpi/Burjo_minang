@@ -1,0 +1,30 @@
+# Dependency & build artifacts (di-install/di-build ulang di dalam image)
+/vendor
+/node_modules
+/public/build
+/public/hot
+
+# Storage runtime (jangan ikut ke image)
+/storage/*.key
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Tooling lokal
+ngrok.exe
+.git
+.gitignore
+.idea
+.vscode
+tests
+phpunit.xml
+
+# Dokumentasi
+HASIL_BLACKBOX.md
+blackbox_testing_results.md
