@@ -55,11 +55,12 @@ class MenuController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama_menu' => ['required', 'string', 'max:255', 'unique:menus,nama_menu'],
-            'kategori'  => ['required', 'string', 'max:100'],
-            'harga'     => ['required', 'numeric', 'min:0'],
-            'stok'      => ['required', 'integer', 'min:0'],
-            'gambar'    => ['required', 'image', 'max:2048'],
+            'nama_menu'  => ['required', 'string', 'max:255', 'unique:menus,nama_menu'],
+            'kategori'   => ['required', 'string', 'max:100'],
+            'harga'      => ['required', 'numeric', 'min:0'],
+            'deskripsi'  => ['nullable', 'string', 'max:1000'],
+            'stok'       => ['required', 'integer', 'min:0'],
+            'gambar'     => ['required', 'image', 'max:2048'],
         ]);
 
         if ($request->hasFile('gambar')) {
@@ -83,11 +84,12 @@ class MenuController extends Controller
     public function update(Request $request, Menu $menu)
     {
         $validated = $request->validate([
-            'nama_menu' => ['required', 'string', 'max:255', Rule::unique('menus')->ignore($menu->id)],
-            'kategori'  => ['required', 'string', 'max:100'],
-            'harga'     => ['required', 'numeric', 'min:0'],
-            'stok'      => ['required', 'integer', 'min:0'],
-            'gambar'    => ['nullable', 'image', 'max:2048'],
+            'nama_menu'  => ['required', 'string', 'max:255', Rule::unique('menus')->ignore($menu->id)],
+            'kategori'   => ['required', 'string', 'max:100'],
+            'harga'      => ['required', 'numeric', 'min:0'],
+            'deskripsi'  => ['nullable', 'string', 'max:1000'],
+            'stok'       => ['required', 'integer', 'min:0'],
+            'gambar'     => ['nullable', 'image', 'max:2048'],
         ]);
 
         if ($request->hasFile('gambar')) {

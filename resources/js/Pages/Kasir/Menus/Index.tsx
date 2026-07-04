@@ -8,6 +8,7 @@ interface Menu {
     nama_menu: string;
     kategori: string;
     harga: number | string;
+    deskripsi: string | null;
     stok: number | string;
     gambar: string | null;
 }
@@ -44,6 +45,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
         nama_menu: '',
         kategori: '',
         harga: '',
+        deskripsi: '',
         stok: '',
         gambar: null as File | null,
     });
@@ -79,6 +81,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
             nama_menu: menu.nama_menu,
             kategori: menu.kategori,
             harga: String(menu.harga),
+            deskripsi: menu.deskripsi ?? '',
             stok: String(menu.stok),
             gambar: null,
         });
@@ -101,6 +104,7 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                 nama_menu: data.nama_menu,
                 kategori: data.kategori,
                 harga: data.harga,
+                deskripsi: data.deskripsi,
                 stok: data.stok,
                 gambar: data.gambar,
             }, {
@@ -395,6 +399,23 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                                     }`}
                                 />
                                 {errors.stok && <p className="text-xs text-red-500 mt-0.5">{errors.stok}</p>}
+                            </div>
+
+                            {/* Deskripsi */}
+                            <div className="flex flex-col gap-1">
+                                <label className="text-sm font-medium text-gray-700">Deskripsi <span className="text-gray-400 font-normal">(opsional)</span></label>
+                                <textarea
+                                    value={data.deskripsi}
+                                    onChange={(e) => setData('deskripsi', e.target.value)}
+                                    placeholder="Tuliskan deskripsi singkat menu ini..."
+                                    rows={3}
+                                    maxLength={1000}
+                                    className={`w-full px-3 py-2 rounded-lg border text-sm focus:outline-none focus:ring-2 focus:ring-bm-gold-400 transition-colors resize-none ${
+                                        errors.deskripsi ? 'border-red-400 focus:ring-red-400' : 'border-gray-300'
+                                    }`}
+                                />
+                                {errors.deskripsi && <p className="text-xs text-red-500 mt-0.5">{errors.deskripsi}</p>}
+                                <p className="text-xs text-gray-400 text-right">{data.deskripsi.length}/1000</p>
                             </div>
 
                             {/* Gambar */}

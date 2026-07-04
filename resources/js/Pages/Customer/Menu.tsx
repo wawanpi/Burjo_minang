@@ -28,6 +28,7 @@ interface Menu {
     nama_menu: string;
     harga: number;
     kategori: string;
+    deskripsi: string | null;
     gambar: string | null;
     stok: number;
     reviews_avg_rating: number | null;
@@ -60,6 +61,7 @@ function MenuCard({
     onAdd,
     onUpdate,
     isStoreOpen,
+    onViewDetail,
 }: {
     menu: Menu;
     delay: number;
@@ -67,6 +69,7 @@ function MenuCard({
     onAdd: () => void;
     onUpdate: (delta: number) => void;
     isStoreOpen: boolean;
+    onViewDetail: () => void;
 }) {
     const ref = useScrollReveal();
 
@@ -74,7 +77,7 @@ function MenuCard({
         <div ref={ref} className="reveal group" style={{ transitionDelay: `${delay}ms` }}>
             <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl hover:shadow-[#990000]/10 transition-all duration-500 hover:-translate-y-2 flex flex-col h-full">
                 {/* Image */}
-                <div className="relative aspect-[4/3] overflow-hidden">
+                <div className="relative aspect-[4/3] overflow-hidden cursor-pointer" onClick={onViewDetail}>
                     {menu.gambar ? (
                         <img
                             src={`/storage/${menu.gambar}`}
@@ -89,6 +92,17 @@ function MenuCard({
 
                     {/* Gradient overlay on hover */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                    {/* View Detail overlay hint */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 z-10">
+                        <span className="flex items-center gap-2 px-4 py-2 bg-white/90 backdrop-blur-sm rounded-full text-gray-900 text-xs font-semibold shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            Lihat Detail
+                        </span>
+                    </div>
 
                     {/* Kategori Badge — Top Left */}
                     <span className="absolute top-4 left-4 px-3 py-1.5 bg-[#990000]/90 backdrop-blur-sm text-white text-[10px] font-bold tracking-widest uppercase rounded-full">
@@ -127,15 +141,10 @@ function MenuCard({
                     </h3>
 
                     <div className="mt-auto pt-4">
-                        <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center mb-4">
                             <span className="text-[#990000] font-bold text-lg">
                                 {formatRupiah(menu.harga)}
                             </span>
-                            {menu.reviews_count > 0 && (
-                                <span className="text-xs text-gray-400 font-medium">
-                                    {menu.reviews_count} ulasan
-                                </span>
-                            )}
                         </div>
 
                         {/* Add to Cart Control */}
@@ -222,6 +231,10 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
     // ─── Scroll Reveal refs ──────────────────────────────────────────────────
     const headerRef = useScrollReveal();
     const filterRef = useScrollReveal();
+
+    // ─── State Detail Modal ──────────────────────────────────────────────────
+    const [selectedMenu, setSelectedMenu] = useState<Menu | null>(null);
+    const [isDetailOpen, setIsDetailOpen] = useState(false);
 
     // ─── State Keranjang ─────────────────────────────────────────────────────
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -729,6 +742,10 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                                         onAdd={() => addToCart(menu)}
                                         onUpdate={(delta) => updateQuantity(menu.id, delta)}
                                         isStoreOpen={isStoreOpen}
+                                        onViewDetail={() => {
+                                            setSelectedMenu(menu);
+                                            setIsDetailOpen(true);
+                                        }}
                                     />
                                 );
                             })}
@@ -1274,6 +1291,104 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                     </div>
                 )}
             </div>
+
+                {/* ═══════════════════════════════════════════════════════════════════
+                    MODAL DETAIL MENU — Premium Glassmorphism
+                    ═══════════════════════════════════════════════════════════════════ */}
+                {isDetailOpen && selectedMenu && (
+                    <div
+                        className="fixed inset-0 z-[70] flex items-center justify-center p-4 font-sans"
+                        onClick={() => setIsDetailOpen(false)}
+                    >
+                        {/* Backdrop */}
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-fade-in" />
+
+                        {/* Modal Panel */}
+                        <div
+                            className="relative bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden animate-scale-in"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Close Button */}
+                            <button
+                                onClick={() => setIsDetailOpen(false)}
+                                className="absolute top-4 right-4 z-20 w-10 h-10 flex items-center justify-center rounded-full bg-black/30 backdrop-blur-sm text-white/80 hover:text-white hover:bg-black/50 transition-all duration-300 hover:rotate-90 border border-white/10"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+
+                            {/* Image */}
+                            <div className="relative aspect-[16/9] overflow-hidden">
+                                {selectedMenu.gambar ? (
+                                    <img
+                                        src={`/storage/${selectedMenu.gambar}`}
+                                        alt={selectedMenu.nama_menu}
+                                        className="w-full h-full object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+                                        <span className="text-7xl opacity-20">🍽️</span>
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+
+                                {/* Badges over image */}
+                                <div className="absolute top-4 left-4 flex items-center gap-2">
+                                    <span className="px-3 py-1.5 bg-[#990000]/90 backdrop-blur-sm text-white text-[10px] font-bold tracking-widest uppercase rounded-full">
+                                        {selectedMenu.kategori}
+                                    </span>
+                                    {selectedMenu.reviews_avg_rating !== null && selectedMenu.reviews_avg_rating > 0 && (
+                                        <span className="bg-white/90 backdrop-blur-sm px-2.5 py-1.5 rounded-full text-xs font-bold text-gray-900 shadow-lg flex items-center gap-1">
+                                            <span className="text-yellow-400">★</span>
+                                            {Number(selectedMenu.reviews_avg_rating).toFixed(1)}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Content */}
+                            <div className="p-6 sm:p-8 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 16rem)' }}>
+                                {/* Menu Name */}
+                                <h2 className="font-serif font-bold text-2xl text-gray-900 leading-tight">
+                                    {selectedMenu.nama_menu}
+                                </h2>
+
+                                {/* Price */}
+                                <p className="text-[#990000] font-bold text-xl mt-2">
+                                    {formatRupiah(selectedMenu.harga)}
+                                </p>
+
+                                {/* Divider */}
+                                <div className="my-5 border-t border-gray-100" />
+
+                                {/* Description */}
+                                <div>
+                                    <h4 className="text-xs tracking-[0.2em] uppercase text-gray-400 font-semibold mb-2">
+                                        Deskripsi
+                                    </h4>
+                                    {selectedMenu.deskripsi ? (
+                                        <p className="text-gray-600 text-sm leading-relaxed whitespace-pre-line">
+                                            {selectedMenu.deskripsi}
+                                        </p>
+                                    ) : (
+                                        <p className="text-gray-400 text-sm italic leading-relaxed">
+                                            Deskripsi untuk menu ini belum tersedia.
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* Stock Info */}
+                                <div className="mt-5 flex items-center gap-2">
+                                    <div className={`w-2 h-2 rounded-full ${selectedMenu.stok > 0 ? 'bg-emerald-400' : 'bg-red-400'}`} />
+                                    <span className="text-xs text-gray-500 font-medium">
+                                        {selectedMenu.stok > 0 ? `Stok tersedia (${selectedMenu.stok})` : 'Stok habis'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
         </CustomerLayout>
     );
 }
