@@ -12,7 +12,12 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        
+
+        // Percayai proxy (Railway/Nginx) agar Laravel mengenali HTTPS dari
+        // header X-Forwarded-*. Tanpa ini, aset di-generate sebagai http://
+        // dan diblokir browser (mixed content) -> halaman putih.
+        $middleware->trustProxies(at: '*');
+
         // Middleware bawaan Inertia & Breeze
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
