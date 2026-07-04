@@ -279,24 +279,24 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
 
     // Helper Fungsi Row Styling
     const getRowStyle = (order: Order) => {
-        if (order.status_pesanan === 'selesai' || order.status_pesanan === 'batal') 
+        if (order.status_pesanan === 'selesai' || order.status_pesanan === 'batal')
             return 'hover:bg-bm-cream transition-colors duration-150';
 
         if (order.status_pesanan === 'diproses') {
             if (order.tipe_pesanan === 'online' && order.sisa_menit !== null) {
                 if (order.sisa_menit <= 5 && order.sisa_menit > 0) {
-                    return 'bg-red-100 animate-pulse border-l-4 border-red-500';
+                    return 'bg-red-50 border-l-4 border-red-500 hover:bg-red-100/70 transition-colors duration-150';
                 }
             } else if (order.tipe_pesanan !== 'online' && order.durasi_menit !== null) {
                 if (order.durasi_menit >= 15) {
-                    return 'bg-red-100 animate-pulse border-l-4 border-red-500';
+                    return 'bg-red-50 border-l-4 border-red-500 hover:bg-red-100/70 transition-colors duration-150';
                 } else if (order.durasi_menit >= 10) {
-                    return 'bg-yellow-50 border-l-4 border-yellow-400';
+                    return 'bg-yellow-50 border-l-4 border-yellow-400 hover:bg-yellow-100/70 transition-colors duration-150';
                 }
             }
         }
-        
-        return 'hover:bg-amber-50/50 transition-colors duration-150';
+
+        return 'hover:bg-bm-cream transition-colors duration-150';
     };
 
     const formatRupiah = (val: number | string) =>
@@ -394,32 +394,63 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
         });
     };
 
-    // ─── Kolom Waktu (ringkas) — kondisi SLA identik dengan versi lama ──────────
-    const renderTime = (order: Order) => (
-        <div className="space-y-0.5">
-            <div className="text-xs font-medium text-gray-700 whitespace-nowrap">
-                {formatTanggalShort(order.tanggal_pesan)}
-            </div>
-            {order.tipe_pesanan === 'online' && order.waktu_pengambilan && (
-                <div className="text-[11px] text-purple-600 font-medium whitespace-nowrap">
-                    Ambil {formatTanggalShort(order.waktu_pengambilan)}
+    // ─── Kolom Waktu Pesan (ringkas: hanya jam) ─────────────────────────────────
+    const renderWaktuPesan = (order: Order) => {
+        if (!order.tanggal_pesan) return <span className="text-gray-400">-</span>;
+        const d = new Date(order.tanggal_pesan);
+        const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        return (
+            <span className="text-sm text-gray-600 font-medium whitespace-nowrap">
+                {jam}
+            </span>
+        );
+    };
+
+    // ─── Kolom Jam Ambil (jam + timer badge) ────────────────────────────────────
+    const renderJamAmbil = (order: Order) => {
+        // Online orders: tampilkan waktu_pengambilan + sisa menit
+        if (order.tipe_pesanan === 'online' && order.waktu_pengambilan) {
+            const d = new Date(order.waktu_pengambilan);
+            const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const isUrgent = order.sisa_menit !== null && order.sisa_menit <= 5 && order.sisa_menit > 0;
+            return (
+                <div className="space-y-1">
+                    <div className="text-sm font-bold text-gray-900 whitespace-nowrap">
+                        {jam} <span className="text-gray-400 font-normal text-xs">WIB</span>
+                    </div>
                     {order.sisa_menit !== null && order.status_pesanan === 'diproses' && (
-                        <span className="ml-1 font-bold">({Math.round(order.sisa_menit)}m)</span>
+                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap ${
+                            isUrgent ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-sky-50 text-sky-700'
+                        }`}>
+                            <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Sisa {Math.round(order.sisa_menit)} mnt
+                        </span>
                     )}
                 </div>
-            )}
-            {order.tipe_pesanan !== 'online' && order.durasi_menit !== null && order.status_pesanan === 'diproses' && (
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap ${
-                    order.durasi_menit >= 15 ? 'bg-bm-red-50 text-bm-red-700' : 'bg-amber-50 text-amber-700'
-                }`}>
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Berjalan {Math.round(order.durasi_menit)} mnt
-                </span>
-            )}
-        </div>
-    );
+            );
+        }
+
+        // Offline orders: tampilkan timer berjalan jika diproses
+        if (order.tipe_pesanan !== 'online' && order.durasi_menit !== null && order.status_pesanan === 'diproses') {
+            const isLate = order.durasi_menit >= 15;
+            return (
+                <div className="space-y-1">
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap ${
+                        isLate ? 'bg-red-100 text-red-700 animate-pulse' : order.durasi_menit >= 10 ? 'bg-amber-50 text-amber-700' : 'bg-sky-50 text-sky-700'
+                    }`}>
+                        <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Berjalan {Math.round(order.durasi_menit)} mnt
+                    </span>
+                </div>
+            );
+        }
+
+        return <span className="text-gray-300 text-xs">—</span>;
+    };
 
     // ─── Kolom Aksi — handler & kondisi disabled 100% sama, hanya tata letaknya ──
     const renderActions = (order: Order, variant: 'table' | 'card' = 'table') => {
@@ -452,7 +483,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
             <div className={wrap}>
                 {showWaiting ? (
                     <div
-                        className="flex-1 min-w-0 inline-flex items-center justify-center gap-1.5 px-2.5 py-2 text-[11px] font-bold rounded-lg border border-dashed border-gray-300 bg-gray-50 text-gray-400 opacity-80 cursor-not-allowed select-none whitespace-nowrap"
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-[11px] font-bold rounded-lg border border-dashed border-gray-300 bg-gray-50 text-gray-400 opacity-80 cursor-not-allowed select-none whitespace-nowrap"
                         title="Menunggu konfirmasi otomatis dari Midtrans"
                         aria-disabled="true"
                     >
@@ -466,7 +497,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
                         value={order.status_pesanan}
                         onChange={(e) => handleUpdateStatus(order, e.target.value)}
                         aria-label={`Ubah status pesanan #${order.id}`}
-                        className="flex-1 min-w-0 px-3 py-2 text-xs font-semibold rounded-lg border border-gray-300 bg-white text-bm-charcoal-800 shadow-sm hover:border-bm-gold-400 focus:outline-none focus:ring-2 focus:ring-bm-gold-400 focus:border-transparent transition-all cursor-pointer"
+                        className="flex-1 min-w-0 px-3 py-2 text-xs font-semibold rounded-lg border border-gray-300 bg-white text-bm-charcoal-800 shadow-sm hover:border-gray-400 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-sky-400 focus:border-transparent transition-all cursor-pointer"
                     >
                         {renderStatusOptions(order)}
                     </select>
@@ -550,7 +581,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
                         <span className="bm-eyebrow block mb-1.5">Operasional</span>
                         <div className="flex items-center gap-2.5">
                             <span className="text-bm-gold-500 text-lg leading-none select-none">✦</span>
-                            <h1 className="text-2xl lg:text-[28px] font-serif font-bold text-bm-charcoal-900 leading-tight">Daftar Pesanan</h1>
+                            <h2 className="text-lg lg:text-xl font-serif font-bold text-bm-charcoal-900 leading-tight tracking-tight">Daftar Pesanan</h2>
                         </div>
                         <div className="bm-gold-underline mt-3" />
                         <div className="mt-3">
@@ -590,10 +621,11 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
                 <div className="flex items-center gap-2 flex-wrap justify-start">
                     <button
                         onClick={() => handleFilterStatus('')}
+                        aria-pressed={selectedStatus === ''}
                         className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                             selectedStatus === ''
-                                ? 'bg-bm-charcoal-900 text-white shadow-soft'
-                                : 'bg-white border border-gray-300 text-bm-text-muted hover:bg-bm-cream'
+                                ? 'bg-bm-charcoal-900 text-white shadow-soft ring-2 ring-bm-charcoal-900/20 ring-offset-1'
+                                : 'bg-white border border-gray-300 text-bm-text-muted hover:bg-bm-cream hover:border-gray-400 hover:text-bm-charcoal-800'
                         }`}
                     >
                         Semua
@@ -602,10 +634,11 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
                         <button
                             key={key}
                             onClick={() => handleFilterStatus(key)}
+                            aria-pressed={selectedStatus === key}
                             className={`px-4 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
                                 selectedStatus === key
-                                    ? `${filterActiveColor[key]} shadow-soft`
-                                    : 'bg-white border border-gray-300 text-bm-text-muted hover:bg-bm-cream'
+                                    ? `${filterActiveColor[key]} shadow-soft ring-2 ring-black/10 ring-offset-1`
+                                    : 'bg-white border border-gray-300 text-bm-text-muted hover:bg-bm-cream hover:border-gray-400 hover:text-bm-charcoal-800'
                             }`}
                         >
                             {cfg.label}
@@ -616,66 +649,101 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
 
             {orderData.length === 0 ? (
                 /* ── Empty State ───────────────────────────────────────────── */
-                <div className="rounded-2xl border border-dashed border-black/[0.1] bg-white shadow-soft px-6 py-20 text-center animate-page-enter">
-                    <div className="flex flex-col items-center gap-3 text-bm-text-muted">
-                        <span className="text-6xl opacity-40 animate-float">📋</span>
-                        <p className="font-serif italic text-xl text-bm-charcoal-800">Belum ada pesanan</p>
-                        <p className="text-sm">Coba ubah filter status di atas.</p>
+                <div className="rounded-2xl border border-dashed border-black/[0.1] bg-white shadow-soft px-6 py-16 text-center animate-page-enter">
+                    <div className="flex flex-col items-center gap-4 text-bm-text-muted">
+                        <svg className="w-24 h-24 animate-float" viewBox="0 0 96 96" fill="none" aria-hidden="true">
+                            {/* Mangkuk burjo line-art */}
+                            <path d="M20 46h56c0 14-10 26-28 26S20 60 20 46z" stroke="#1F2730" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="#FAF7F2" />
+                            <path d="M38 72l-3 8M58 72l3 8" stroke="#1F2730" strokeWidth="2.5" strokeLinecap="round" />
+                            <path d="M16 46h64" stroke="#EAB308" strokeWidth="3" strokeLinecap="round" />
+                            {/* Uap */}
+                            <path d="M40 34c0-4 3-4 3-8s-3-4-3-8" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+                            <path d="M50 36c0-4 3-4 3-8s-3-4-3-8" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" opacity="0.5" />
+                            <path d="M60 34c0-4 3-4 3-8s-3-4-3-8" stroke="#EAB308" strokeWidth="2" strokeLinecap="round" opacity="0.7" />
+                        </svg>
+                        <div>
+                            <p className="font-serif text-xl text-bm-charcoal-800 mb-1">
+                                {selectedStatus
+                                    ? `Tidak ada pesanan "${statusConfig[selectedStatus]?.label || selectedStatus}"`
+                                    : 'Belum ada pesanan masuk'}
+                            </p>
+                            <p className="text-sm">
+                                {selectedStatus
+                                    ? 'Coba lihat status lain atau tampilkan semua pesanan.'
+                                    : 'Pesanan baru akan muncul di sini secara otomatis.'}
+                            </p>
+                        </div>
+                        {selectedStatus && (
+                            <button
+                                type="button"
+                                onClick={() => handleFilterStatus('')}
+                                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-bm-charcoal-900 text-sm font-semibold text-white hover:bg-bm-charcoal-800 transition-colors shadow-soft"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Tampilkan Semua
+                            </button>
+                        )}
                     </div>
                 </div>
             ) : (
                 <>
-                    {/* ── Desktop lebar (≥1280px): Tabel, header sticky, TANPA scroll samping ── */}
+                    {/* ── Desktop lebar (≥1280px): Tabel, header sticky, scroll samping bila sempit ── */}
                     <div className="hidden xl:block overflow-hidden rounded-2xl border border-black/[0.05] bg-white shadow-soft w-full animate-page-enter">
-                        <div className="max-h-[68vh] overflow-y-auto overflow-x-hidden custom-scrollbar">
-                            <table className="w-full table-fixed divide-y divide-gray-200">
+                        <div className="max-h-[68vh] overflow-y-auto overflow-x-auto custom-scrollbar">
+                            <table className="w-full min-w-[1080px] table-fixed divide-y divide-gray-200">
                                 <colgroup>
+                                    <col className="w-[8%]" />
                                     <col className="w-[12%]" />
                                     <col className="w-[15%]" />
-                                    <col className="w-[19%]" />
+                                    <col className="w-[9%]" />
                                     <col className="w-[12%]" />
-                                    <col className="w-[14%]" />
-                                    <col className="w-[12%]" />
-                                    <col className="w-[16%]" />
+                                    <col className="w-[7%]" />
+                                    <col className="w-[13%]" />
+                                    <col className="w-[24%]" />
                                 </colgroup>
                                 <thead className="bg-bm-cream sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.06)]">
                                     <tr>
-                                        <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">ID / Tipe</th>
+                                        <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Tipe Pesanan</th>
                                         <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Pelanggan</th>
                                         <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Item Pesanan</th>
                                         <th className="px-4 py-3.5 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Total</th>
                                         <th className="px-4 py-3.5 text-center text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Status / Bayar</th>
-                                        <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Waktu</th>
+                                        <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Waktu Pesan</th>
+                                        <th className="px-4 py-3.5 text-left text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Jam Ambil</th>
                                         <th className="px-4 py-3.5 text-right text-[11px] font-semibold uppercase tracking-[0.08em] text-bm-text-muted">Aksi</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-black/[0.05]">
                                     {orderData.map((order) => (
                                         <tr key={order.id} className={getRowStyle(order)}>
-                                            <td className="px-4 py-4 align-top">
-                                                <div className="text-sm font-mono font-bold text-gray-900">#{order.id}</div>
-                                                <div className="mt-1">{renderTipeChip(order)}</div>
+                                            <td className="px-4 py-5 align-top">
+                                                {renderTipeChip(order)}
                                             </td>
-                                            <td className="px-4 py-4 align-top">
-                                                <div className="text-sm font-medium text-gray-900 truncate">{order.user?.name || 'Guest'}</div>
-                                                <div className="text-xs text-gray-500 truncate">{order.user?.no_hp || order.user?.email || '-'}</div>
+                                            <td className="px-4 py-5 align-top">
+                                                <div className="text-sm font-medium text-gray-900 truncate" title={order.user?.name || 'Guest'}>{order.user?.name || 'Guest'}</div>
+                                                <div className="text-xs text-gray-600 truncate" title={order.user?.no_hp || order.user?.email || '-'}>{order.user?.no_hp || order.user?.email || '-'}</div>
                                             </td>
-                                            <td className="px-4 py-4 align-top">
+                                            <td className="px-4 py-5 align-top">
                                                 <ItemList items={order.order_items} onShowAll={() => openDetailModal(order)} />
                                             </td>
-                                            <td className="px-4 py-4 align-top text-right text-sm font-bold text-bm-red-600 whitespace-nowrap">
+                                            <td className="px-4 py-5 align-top text-right text-sm font-bold text-bm-red-600 whitespace-nowrap">
                                                 {formatRupiah(order.total_harga)}
                                             </td>
-                                            <td className="px-4 py-4 align-top">
+                                            <td className="px-4 py-5 align-top">
                                                 <div className="flex flex-col items-center gap-1.5">
                                                     <StatusBadge status={order.status_pesanan} />
                                                     <PaymentBadge payment={order.payment} align="center" />
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-4 align-top">
-                                                {renderTime(order)}
+                                            <td className="px-4 py-5 align-top whitespace-nowrap">
+                                                {renderWaktuPesan(order)}
                                             </td>
-                                            <td className="px-4 py-4 align-top">
+                                            <td className="px-4 py-5 align-top whitespace-nowrap">
+                                                {renderJamAmbil(order)}
+                                            </td>
+                                            <td className="px-4 py-5 align-top">
                                                 {renderActions(order, 'table')}
                                             </td>
                                         </tr>
@@ -707,8 +775,8 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
                                 <div className="space-y-3">
                                     <div className="flex items-center justify-between gap-3">
                                         <div className="min-w-0">
-                                            <div className="text-sm font-medium text-gray-900 truncate">{order.user?.name || 'Guest'}</div>
-                                            <div className="text-xs text-gray-500 truncate">{order.user?.no_hp || order.user?.email || '-'}</div>
+                                            <div className="text-sm font-medium text-gray-900 truncate" title={order.user?.name || 'Guest'}>{order.user?.name || 'Guest'}</div>
+                                            <div className="text-xs text-gray-600 truncate" title={order.user?.no_hp || order.user?.email || '-'}>{order.user?.no_hp || order.user?.email || '-'}</div>
                                         </div>
                                         <PaymentBadge payment={order.payment} align="start" />
                                     </div>
@@ -718,7 +786,16 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
                                     </div>
 
                                     <div className="flex items-end justify-between gap-3">
-                                        {renderTime(order)}
+                                        <div className="space-y-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Pesan</span>
+                                                {renderWaktuPesan(order)}
+                                            </div>
+                                            <div className="flex items-center gap-1.5">
+                                                <span className="text-[10px] uppercase tracking-wider text-gray-400 font-semibold">Ambil</span>
+                                                {renderJamAmbil(order)}
+                                            </div>
+                                        </div>
                                         <div className="text-right">
                                             <div className="bm-eyebrow !text-[10px]">Total</div>
                                             <div className="text-base font-bold text-bm-red-600 whitespace-nowrap">{formatRupiah(order.total_harga)}</div>
