@@ -211,7 +211,8 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
             </div>
 
             {/* Table */}
-            <div className="overflow-hidden rounded-2xl border border-black/[0.05] bg-white shadow-soft animate-page-enter">
+            {/* ─── Tabel (Desktop / layar besar saja) ────────────────── */}
+            <div className="hidden md:block overflow-hidden rounded-2xl border border-black/[0.05] bg-white shadow-soft animate-page-enter">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-bm-cream">
                         <tr>
@@ -307,6 +308,88 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* ─── Kartu (Mobile / layar kecil saja) ─────────────────── */}
+            <div className="md:hidden space-y-3 animate-page-enter">
+                {menus.length === 0 ? (
+                    <div className="rounded-2xl border border-black/[0.05] bg-white shadow-soft px-6 py-14 text-center">
+                        <div className="flex flex-col items-center gap-2 text-bm-text-muted">
+                            <span className="text-5xl opacity-40 animate-float">🍽️</span>
+                            <p className="font-serif italic text-lg text-bm-charcoal-800">
+                                {filters?.search
+                                    ? `Tidak ada menu yang cocok dengan "${filters.search}"`
+                                    : 'Belum ada data menu.'}
+                            </p>
+                            {!filters?.search && (
+                                <p className="text-sm">Klik "Tambah Menu" untuk mulai menambahkan menu.</p>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    menus.map((menu) => (
+                        <div
+                            key={menu.id}
+                            className="rounded-2xl border border-black/[0.05] bg-white shadow-soft p-4"
+                        >
+                            <div className="flex gap-3">
+                                {menu.gambar ? (
+                                    <img
+                                        src={`/storage/${menu.gambar}`}
+                                        alt={menu.nama_menu}
+                                        className="h-16 w-16 flex-shrink-0 rounded-[10px] object-cover ring-1 ring-gray-200"
+                                    />
+                                ) : (
+                                    <div className="h-16 w-16 flex-shrink-0 rounded-[10px] bg-gray-100 flex items-center justify-center text-gray-400 text-xl">
+                                        🍽️
+                                    </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="font-serif font-semibold text-bm-charcoal-900 truncate">{menu.nama_menu}</h3>
+                                    <p className="mt-0.5 text-sm font-bold text-bm-red-600">{formatRupiah(menu.harga)}</p>
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ${
+                                            /minum/i.test(menu.kategori)
+                                                ? 'bg-bm-red-50 text-bm-red-700 ring-bm-red-600/15'
+                                                : 'bg-bm-gold-100 text-bm-charcoal-900 ring-bm-gold-500/25'
+                                        }`}>
+                                            {menu.kategori}
+                                        </span>
+                                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ${
+                                            Number(menu.stok) > 10
+                                                ? 'bg-green-50 text-green-700 ring-green-600/15'
+                                                : Number(menu.stok) > 0
+                                                    ? 'bg-amber-50 text-amber-700 ring-amber-600/15'
+                                                    : 'bg-bm-red-50 text-bm-red-700 ring-bm-red-600/15'
+                                        }`}>
+                                            Stok: {menu.stok}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="mt-3 flex items-center gap-2 border-t border-black/[0.05] pt-3">
+                                <button
+                                    onClick={() => openEdit(menu)}
+                                    className="inline-flex flex-1 items-center justify-center gap-1 px-3 py-2 rounded-full border border-gray-300 text-xs font-semibold text-bm-charcoal-800 hover:bg-bm-cream hover:border-gray-400 transition-colors"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                    </svg>
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={() => handleDelete(menu)}
+                                    className="inline-flex flex-1 items-center justify-center gap-1 px-3 py-2 rounded-lg bg-bm-red-600 text-xs font-semibold text-white hover:bg-bm-red-700 transition-colors"
+                                >
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Hapus
+                                </button>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
             {/* ─── Modal Form Tambah/Edit ────────────────────────────── */}

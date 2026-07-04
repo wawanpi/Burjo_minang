@@ -60,7 +60,9 @@ const UserTable = ({ users, onEdit, onDelete, isDeleting = null, searchTerm }: U
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-black/[0.05] bg-white shadow-soft">
+    <>
+    {/* ─── Tabel (Desktop / layar besar saja) ────────────────── */}
+    <div className="hidden md:block overflow-x-auto rounded-2xl border border-black/[0.05] bg-white shadow-soft">
       <table className="w-full text-sm">
         <thead>
           <tr className="bg-bm-cream border-b border-black/[0.05]">
@@ -113,6 +115,48 @@ const UserTable = ({ users, onEdit, onDelete, isDeleting = null, searchTerm }: U
         </tbody>
       </table>
     </div>
+
+    {/* ─── Kartu (Mobile / layar kecil saja) ─────────────────── */}
+    <div className="md:hidden space-y-3">
+      {users.map((user) => (
+        <div key={user.id} className="rounded-2xl border border-black/[0.05] bg-white shadow-soft p-4">
+          <div className="flex items-center gap-3">
+            <div className={`w-11 h-11 flex-shrink-0 rounded-full bg-gradient-to-br ${avatarGradient(user.role)} flex items-center justify-center text-base font-bold text-white uppercase ring-1 ring-black/5 shadow-sm`}>
+              {user.name.charAt(0)}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h3 className="font-serif font-semibold text-bm-charcoal-900 truncate">{user.name}</h3>
+                <RoleBadge role={user.role} />
+              </div>
+              <p className="mt-0.5 text-sm text-bm-text-muted truncate">{user.email}</p>
+            </div>
+          </div>
+          <p className="mt-2 text-xs text-bm-text-muted">
+            Bergabung:{' '}
+            {new Date(user.created_at).toLocaleDateString('id-ID', {
+              day: '2-digit', month: 'short', year: 'numeric',
+            })}
+          </p>
+          <div className="mt-3 flex items-center gap-2 border-t border-black/[0.05] pt-3">
+            <Button variant="outline" className="flex-1 justify-center !px-3 !py-2 text-xs" onClick={() => onEdit(user)}>
+              Edit
+            </Button>
+            <Button
+              variant="danger"
+              pill={false}
+              className="flex-1 justify-center !px-3 !py-2 text-xs"
+              isLoading={isDeleting === user.id}
+              onClick={() => onDelete(user)}
+              disabled={user.role === 'owner'}
+            >
+              Hapus
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
+    </>
   );
 };
 
