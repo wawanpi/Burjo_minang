@@ -8,7 +8,10 @@ FROM node:20-alpine AS assets
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci
+# --legacy-peer-deps: project pakai vite@8 sedangkan @vitejs/plugin-react
+# belum mendukungnya secara resmi (konflik peer dependency). Sama seperti
+# kondisi node_modules lokal yang sudah berjalan normal.
+RUN npm ci --legacy-peer-deps
 
 COPY . .
 # Build hanya bundle client (bukan --ssr)
