@@ -96,7 +96,7 @@ Route::middleware(['auth', 'role:owner,kasir'])
 // ║  3. ROUTE PELANGGAN (Customer)                                         ║
 // ║  Hanya role 'pelanggan' yang bisa mengakses                            ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
-Route::middleware(['auth', 'role:pelanggan'])
+Route::middleware(['auth', 'verified', 'role:pelanggan'])
     ->prefix('customer')
     ->name('customer.')
     ->group(function () {

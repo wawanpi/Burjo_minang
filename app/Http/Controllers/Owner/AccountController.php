@@ -65,6 +65,9 @@ class AccountController extends Controller
             'no_hp'    => $validated['no_hp'],
             'password' => Hash::make($validated['password']),
             'role'     => $validated['role'],
+            // Akun dibuat oleh Owner = dipercaya, langsung terverifikasi
+            // agar tidak terkena middleware 'verified'.
+            'email_verified_at' => now(),
         ]);
 
         return redirect()
