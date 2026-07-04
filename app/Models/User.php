@@ -10,7 +10,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany; // WAJIB DIIMPORT
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\VerifyEmailNotification;
 
-class User extends Authenticatable implements MustVerifyEmail
+// NOTE: Verifikasi email dinonaktifkan sementara (SMTP diblokir Railway,
+// belum ada domain untuk provider email API). Untuk mengaktifkan kembali:
+//   1. tambahkan kembali "implements MustVerifyEmail" di bawah
+//   2. pasang kembali middleware 'verified' pada rute pelanggan (routes/web.php)
+class User extends Authenticatable // implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;

@@ -96,7 +96,9 @@ Route::middleware(['auth', 'role:owner,kasir'])
 // ║  3. ROUTE PELANGGAN (Customer)                                         ║
 // ║  Hanya role 'pelanggan' yang bisa mengakses                            ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
-Route::middleware(['auth', 'verified', 'role:pelanggan'])
+// CATATAN: middleware 'verified' dinonaktifkan sementara (lihat App\Models\User).
+// Untuk mewajibkan verifikasi email lagi, tambahkan 'verified' kembali di sini.
+Route::middleware(['auth', 'role:pelanggan'])
     ->prefix('customer')
     ->name('customer.')
     ->group(function () {
