@@ -302,8 +302,8 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
 
   // Kolom tabel dinamis berdasarkan tab
   const tableHeaders = isKeuangan
-    ? ['#', 'Pelanggan', 'Tanggal', 'Total', 'Metode', 'Tipe Pesanan']
-    : ['#', 'Pelanggan', 'Tanggal', 'Total', 'Metode', 'Tipe Pesanan', 'Status'];
+    ? ['#', 'ID Pesanan', 'Tanggal', 'Total', 'Metode', 'Tipe Pesanan']
+    : ['#', 'ID Pesanan', 'Tanggal', 'Total', 'Metode', 'Tipe Pesanan', 'Status'];
 
   // Tanggal hari ini
   const todayStr = new Date().toLocaleDateString('id-ID', {
@@ -561,7 +561,7 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
               <thead>
                 <tr className="bg-bm-cream dark:bg-gray-800/50">
                   {tableHeaders.map((h) => (
-                    <th key={h} className="px-5 py-3.5 text-left text-[11px] font-semibold text-bm-text-muted dark:text-gray-400 uppercase tracking-[0.08em] whitespace-nowrap">
+                    <th key={h} className={`px-5 py-3.5 text-[11px] font-semibold text-bm-text-muted dark:text-gray-400 uppercase tracking-[0.08em] whitespace-nowrap ${h === 'Total' ? 'text-right' : 'text-left'}`}>
                       {h}
                     </th>
                   ))}
@@ -592,7 +592,7 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
                   </tr>
                 ) : (
                   /* Data rows */
-                  orders.data.map((order) => {
+                  orders.data.map((order, idx) => {
                     const tBadge = tipeBadge(order.tipe_pesanan);
                     const sBadge = statusBadge(order.status_pesanan);
                     return (
@@ -603,11 +603,11 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
                       >
                         {/* # */}
                         <td className="px-5 py-3.5 text-xs text-gray-400 dark:text-gray-500 font-medium">
-                          #{order.id}
+                          {idx + 1}
                         </td>
-                        {/* Pelanggan */}
-                        <td className="px-5 py-3.5 font-medium text-gray-900 dark:text-gray-100">
-                          {order.user?.name ?? '—'}
+                        {/* ID Pesanan */}
+                        <td className="px-5 py-3.5 font-medium text-gray-900 dark:text-gray-100 font-mono">
+                          #{order.id}
                         </td>
                         {/* Tanggal */}
                         <td className="px-5 py-3.5 text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">

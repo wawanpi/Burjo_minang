@@ -214,7 +214,7 @@ export default function LaporanPrint({ orders, totalPendapatan, tipeLabel, dari,
                     <thead>
                         <tr>
                             <th style={{ width: '40px' }}>#</th>
-                            <th>Pelanggan</th>
+                            <th>ID Pesanan</th>
                             <th>Tanggal</th>
                             <th style={{ textAlign: 'right' }}>Total</th>
                             <th>Metode</th>
@@ -234,7 +234,7 @@ export default function LaporanPrint({ orders, totalPendapatan, tipeLabel, dari,
                                 return (
                                     <tr key={order.id}>
                                         <td style={{ color: '#9ca3af' }}>{i + 1}</td>
-                                        <td style={{ fontWeight: 500 }}>{order.user?.name || '—'}</td>
+                                        <td style={{ fontWeight: 500 }}>#{order.id}</td>
                                         <td>{formatTanggal(order.tanggal_pesan)}</td>
                                         <td style={{ textAlign: 'right', fontWeight: 600 }}>
                                             Rp {formatRupiah(order.total_harga)}
