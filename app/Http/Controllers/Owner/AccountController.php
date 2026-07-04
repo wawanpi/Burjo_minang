@@ -14,16 +14,27 @@ use Inertia\Inertia;
 class AccountController extends Controller
 {
     /**
-     * Tampilkan daftar semua akun kasir.
+     * Tampilkan daftar semua akun kasir dengan fitur pencarian.
      */
-    public function index()
+    public function index(Request $request)
     {
+        $search = $request->input('search');
+
         $users = User::whereIn('role', ['kasir', 'pelanggan'])
+            // Grouping closure WAJIB agar orWhere tidak menembus filter role
+            ->when($search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('no_hp', 'like', "%{$search}%");
+                });
+            })
             ->latest()
-            ->get(['id', 'name', 'email', 'role', 'created_at']);
+            ->get(['id', 'name', 'email', 'no_hp', 'role', 'created_at']);
 
         return Inertia::render('Owner/Accounts/Index', [
-            'users' => $users,
+            'users'   => $users,
+            'filters' => ['search' => $search],
         ]);
     }
 

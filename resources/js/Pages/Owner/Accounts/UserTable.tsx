@@ -42,14 +42,19 @@ interface UserTableProps {
   onEdit: (user: User) => void;
   onDelete: (user: User) => void;
   isDeleting?: number | null; // id user yang sedang dihapus
+  searchTerm?: string; // kata kunci pencarian aktif (untuk pesan empty-state)
 }
 
-const UserTable = ({ users, onEdit, onDelete, isDeleting = null }: UserTableProps) => {
+const UserTable = ({ users, onEdit, onDelete, isDeleting = null, searchTerm }: UserTableProps) => {
   if (users.length === 0) {
     return (
       <div className="rounded-2xl border border-black/[0.05] bg-white shadow-soft text-center py-16">
         <span className="text-5xl opacity-40 animate-float block mb-2">👤</span>
-        <p className="font-serif italic text-lg text-bm-charcoal-800">Belum ada data pengguna.</p>
+        <p className="font-serif italic text-lg text-bm-charcoal-800">
+          {searchTerm
+            ? `Tidak ada akun yang cocok dengan "${searchTerm}"`
+            : 'Belum ada data pengguna.'}
+        </p>
       </div>
     );
   }

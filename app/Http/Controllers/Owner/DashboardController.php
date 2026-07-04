@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Owner;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\OrderItem;
 use Carbon\Carbon;
 use Inertia\Inertia;
 
@@ -43,9 +44,10 @@ class DashboardController extends Controller
             ];
 
             // Antrean terbaru hari ini: prioritaskan yang butuh tindakan (diproses/pending dulu)
+            // CASE WHEN dipakai (bukan FIELD()) agar portabel di semua database (MySQL/MariaDB/SQLite)
             $antrean_terbaru = Order::with(['user:id,name'])
                 ->whereDate('tanggal_pesan', today())
-                ->orderByRaw("FIELD(status_pesanan, 'menunggu_pembayaran', 'diproses', 'selesai', 'dibatalkan')")
+                ->orderByRaw("CASE status_pesanan WHEN 'menunggu_pembayaran' THEN 1 WHEN 'diproses' THEN 2 WHEN 'selesai' THEN 3 WHEN 'batal' THEN 4 ELSE 5 END")
                 ->latest('tanggal_pesan')
                 ->take(7)
                 ->get()
@@ -109,13 +111,49 @@ class DashboardController extends Controller
 
         // 4. Recent Orders (Pesanan Terbaru): 5 pesanan terbaru dengan eager load user & payment
         $recent_orders = Order::with([
-                'user:id,name,email', 
+                'user:id,name,email',
                 'payment:id,order_id,metode_pembayaran,status_pembayaran'
             ])
             ->latest('tanggal_pesan')
             ->take(5)
-            ->get();
+            ->get()
+            ->map(fn($o) => [
+                'id'                => $o->id,
+                'pelanggan'         => $o->user->name ?? 'Walk-in',
+                'tanggal'           => Carbon::parse($o->tanggal_pesan)->timezone('Asia/Jakarta')->isoFormat('D MMM, HH:mm'),
+                'total'             => (int) $o->total_harga,
+                'tipe_pesanan'      => $o->tipe_pesanan,
+                'status_pesanan'    => $o->status_pesanan,
+                'metode_pembayaran' => $o->payment->metode_pembayaran ?? '-',
+            ]);
 
-        return Inertia::render('Owner/Dashboard/DashboardPage', compact('stats', 'chart_data', 'recent_orders'));
+        // 5. Menu Terlaris: top 5 menu berdasarkan qty terjual dari transaksi lunas
+        $maxTerjual = null;
+        $menu_terlaris = OrderItem::whereHas('order.payment', function ($query) {
+                $query->where('status_pembayaran', 'lunas');
+            })
+            ->selectRaw('menu_id, SUM(jumlah) as total_terjual, SUM(subtotal) as total_pendapatan')
+            ->groupBy('menu_id')
+            ->orderByDesc('total_terjual')
+            ->with('menu:id,nama_menu,kategori,gambar')
+            ->take(5)
+            ->get()
+            ->filter(fn($row) => $row->menu !== null)
+            ->values()
+            ->map(function ($row) use (&$maxTerjual) {
+                $maxTerjual ??= (int) $row->total_terjual; // baris pertama = terlaris
+                return [
+                    'id'               => $row->menu_id,
+                    'nama_menu'        => $row->menu->nama_menu,
+                    'kategori'         => $row->menu->kategori,
+                    'gambar'           => $row->menu->gambar,
+                    'total_terjual'    => (int) $row->total_terjual,
+                    'total_pendapatan' => (float) $row->total_pendapatan,
+                    // persentase relatif terhadap menu paling laris (untuk bar visual)
+                    'persen'           => $maxTerjual > 0 ? round(((int) $row->total_terjual / $maxTerjual) * 100) : 0,
+                ];
+            });
+
+        return Inertia::render('Owner/Dashboard/DashboardPage', compact('stats', 'chart_data', 'recent_orders', 'menu_terlaris'));
     }
 }
