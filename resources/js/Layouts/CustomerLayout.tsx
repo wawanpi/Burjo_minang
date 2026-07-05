@@ -11,12 +11,16 @@ export default function CustomerLayout({ children, title }: Props) {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mobileDropdownRef = useRef<HTMLDivElement>(null);
   const currentRoute = (name: string) => (route() as any).current(name);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const insideDesktop = dropdownRef.current?.contains(target);
+      const insideMobile = mobileDropdownRef.current?.contains(target);
+      if (!insideDesktop && !insideMobile) {
         setIsDropdownOpen(false);
       }
     };
@@ -132,31 +136,33 @@ export default function CustomerLayout({ children, title }: Props) {
           <span className={`text-[10px] font-extrabold tracking-wide transition-colors duration-300 ${currentRoute('customer.orders') ? 'text-[#c70024]' : 'text-gray-400'}`}>Pesanan</span>
         </Link>
 
-        {/* Profil Menu (Trigger Logout) */}
-        <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex flex-col items-center gap-1 group w-16 relative">
-          <div className={`p-1.5 rounded-full transition-all duration-300 ${isDropdownOpen ? 'bg-red-50' : 'group-hover:bg-gray-50'}`}>
-            <svg className={`w-6 h-6 transition-colors duration-300 ${isDropdownOpen ? 'text-[#c70024] stroke-[#c70024] stroke-2' : 'text-gray-400 stroke-[1.5px]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-          </div>
-          <span className={`text-[10px] font-extrabold tracking-wide transition-colors duration-300 ${isDropdownOpen ? 'text-[#c70024]' : 'text-gray-400'}`}>Profil</span>
-          
-              {/* Dropdown Mobile Profil */}
-              {isDropdownOpen && (
-                <div className="absolute bottom-16 right-0 w-44 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 animate-toast-in z-50 overflow-hidden">
-                  <div className="px-4 py-2.5 border-b border-gray-100 mb-1 text-left">
-                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Hai,</p>
-                    <p className="text-sm font-extrabold text-gray-900 truncate">{auth.user.name}</p>
-                  </div>
-                  <Link href={route('profile.edit')} className="block w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
-                    👤 Profil Saya
-                  </Link>
-                  <Link href={route('logout')} method="post" as="button" className="block w-full text-left px-4 py-2.5 text-sm font-bold text-[#c70024] hover:bg-red-50 transition-colors">
-                    🚪 Logout Keluar
-                  </Link>
-                </div>
-              )}
-        </button>
+        {/* Profil Menu (Trigger Dropdown) */}
+        <div ref={mobileDropdownRef} className="relative flex justify-center w-16">
+          <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex flex-col items-center gap-1 group w-16">
+            <div className={`p-1.5 rounded-full transition-all duration-300 ${isDropdownOpen ? 'bg-red-50' : 'group-hover:bg-gray-50'}`}>
+              <svg className={`w-6 h-6 transition-colors duration-300 ${isDropdownOpen ? 'text-[#c70024] stroke-[#c70024] stroke-2' : 'text-gray-400 stroke-[1.5px]'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+            <span className={`text-[10px] font-extrabold tracking-wide transition-colors duration-300 ${isDropdownOpen ? 'text-[#c70024]' : 'text-gray-400'}`}>Profil</span>
+          </button>
+
+          {/* Dropdown Mobile Profil */}
+          {isDropdownOpen && (
+            <div className="absolute bottom-16 right-0 w-44 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 animate-toast-in z-50 overflow-hidden">
+              <div className="px-4 py-2.5 border-b border-gray-100 mb-1 text-left">
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Hai,</p>
+                <p className="text-sm font-extrabold text-gray-900 truncate">{auth.user.name}</p>
+              </div>
+              <Link href={route('profile.edit')} onClick={() => setIsDropdownOpen(false)} className="block w-full text-left px-4 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+                👤 Profil Saya
+              </Link>
+              <Link href={route('logout')} method="post" as="button" className="block w-full text-left px-4 py-2.5 text-sm font-bold text-[#c70024] hover:bg-red-50 transition-colors">
+                🚪 Logout Keluar
+              </Link>
+            </div>
+          )}
+        </div>
       </nav>
     </div>
   );
