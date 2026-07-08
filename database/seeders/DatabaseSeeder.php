@@ -60,5 +60,10 @@ class DatabaseSeeder extends Seeder
 
         // Seed daftar menu awal
         $this->call(MenuSeeder::class);
+
+        // Seed data dummy Laporan Keuangan & Ulasan (untuk demo/TA).
+        // Idempotent: hanya mengisi sekali, deploy berikutnya dilewati.
+        // Hapus baris ini jika tidak ingin data dummy ikut ter-deploy.
+        $this->call(LaporanUlasanDummySeeder::class);
     }
 }
