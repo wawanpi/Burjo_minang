@@ -65,5 +65,8 @@ class DatabaseSeeder extends Seeder
         // Idempotent: hanya mengisi sekali, deploy berikutnya dilewati.
         // Hapus baris ini jika tidak ingin data dummy ikut ter-deploy.
         $this->call(LaporanUlasanDummySeeder::class);
+
+        // Data dummy Laporan Keuangan tambahan: Januari–sekarang (per bulan).
+        $this->call(LaporanKeuanganTambahanSeeder::class);
     }
 }
