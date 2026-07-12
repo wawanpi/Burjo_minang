@@ -135,7 +135,9 @@ class DashboardController extends Controller
             ->selectRaw('menu_id, SUM(jumlah) as total_terjual, SUM(subtotal) as total_pendapatan')
             ->groupBy('menu_id')
             ->orderByDesc('total_terjual')
-            ->with('menu:id,nama_menu,kategori,gambar')
+            // withTrashed: menu yang sudah dinonaktifkan (soft delete) tetap muncul
+            // di riwayat penjualan agar data historis tidak hilang (Bug #2)
+            ->with(['menu' => fn ($q) => $q->withTrashed()])
             ->take(5)
             ->get()
             ->filter(fn($row) => $row->menu !== null)

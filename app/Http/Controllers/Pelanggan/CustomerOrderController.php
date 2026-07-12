@@ -392,9 +392,14 @@ class CustomerOrderController extends Controller
 
         $tab = $request->input('tab', 'aktif'); // 'aktif' atau 'riwayat'
 
-        $baseQuery = Order::with(['orderItems.menu', 'payment', 'orderItems.menu.reviews' => function($q) {
-                $q->where('user_id', auth()->id());
-            }])
+        $baseQuery = Order::with([
+                // withTrashed: menu yang dinonaktifkan tetap tampil di riwayat pesanan (Bug #2)
+                'orderItems.menu' => fn ($q) => $q->withTrashed(),
+                'payment',
+                'orderItems.menu.reviews' => function($q) {
+                    $q->where('user_id', auth()->id());
+                },
+            ])
             ->where('user_id', auth()->id());
 
         if ($tab === 'aktif') {

@@ -32,7 +32,7 @@ class LaporanController extends Controller
         $baseQuery = Order::with([
                 'user:id,name,email,no_hp',
                 'payment:id,order_id,metode_pembayaran,status_pembayaran',
-                'orderItems.menu:id,nama_menu,harga',
+                'orderItems.menu' => fn ($q) => $q->withTrashed(), // Bug #2: pertahankan menu historis
             ])
             ->when($request->dari, fn($q) =>
                 $q->whereDate('tanggal_pesan', '>=', $request->dari)

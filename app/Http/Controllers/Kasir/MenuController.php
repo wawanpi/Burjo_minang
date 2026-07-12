@@ -106,14 +106,20 @@ class MenuController extends Controller
     }
 
     /**
-     * Menghapus menu dari database.
+     * Menonaktifkan (soft delete) menu dari daftar jual.
+     *
+     * Bug #2: Karena model Menu memakai trait SoftDeletes, panggilan delete()
+     * hanya mengisi kolom deleted_at — menu hilang dari daftar aktif tetapi
+     * rincian order_items historis tetap utuh (cascade fisik tidak terpicu).
+     * File gambar sengaja TIDAK dihapus agar nota/riwayat lama tetap menampilkan
+     * gambar menu.
      *
      * @param  \App\Models\Menu  $menu
      * @return \Illuminate\Http\RedirectResponse
      */
     public function destroy(Menu $menu)
     {
-        $menu->delete();
+        $menu->delete(); // soft delete (mengisi deleted_at)
 
         return redirect()
             ->route('kasir.menus.index')
