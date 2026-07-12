@@ -107,8 +107,8 @@ class OrderManagementController extends Controller
      *
      * Terdapat beberapa validasi keamanan (security gate):
      * 1. Mencegah rollback status yang sudah lunas/selesai.
-     * 2. Mencegah bypass status pesanan online yang masih menunggu Midtrans.
-     * 3. Mencegah kasir mengubah status pembayaran digital yang masih pending.
+     * 2. Mencegah kasir mengubah status pembayaran digital yang masih pending
+     *    (hanya webhook Midtrans yang boleh).
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\Order         $order
@@ -134,16 +134,7 @@ class OrderManagementController extends Controller
             }
         }
         
-        // 2. Jika tipe online dan status sedang menunggu_pembayaran, dilarang langsung bypass ke diproses/selesai secara manual
-        if ($order->tipe_pesanan === 'online' && $currentStatus === 'menunggu_pembayaran') {
-            if ($newStatus === 'diproses' || $newStatus === 'selesai') {
-                return redirect()
-                    ->back()
-                    ->with('error', 'Aksi ilegal! Transaksi online menunggu validasi payment gateway.');
-            }
-        }
-
-        // 3. SECURITY BUG FIX: Pencegahan Manipulasi Kasir pada Pembayaran Digital
+        // 2. SECURITY: Pencegahan Manipulasi Kasir pada Pembayaran Digital
         // Jika metode pembayaran BUKAN Tunai, kasir sama sekali tidak boleh mengutak-atik status jika masih menunggu_pembayaran.
         // Status ini HANYA boleh diubah oleh Webhook Midtrans (PaymentCallbackController).
         if ($order->payment && $order->payment->metode_pembayaran !== 'Tunai' && $currentStatus === 'menunggu_pembayaran') {

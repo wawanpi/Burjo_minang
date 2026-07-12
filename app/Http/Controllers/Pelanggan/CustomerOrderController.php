@@ -89,7 +89,7 @@ class CustomerOrderController extends Controller
             'items.*.jumlah'        => ['required', 'integer', 'min:1'],
             'items.*.harga'         => ['required', 'numeric', 'min:0'],
             'tipe_pesanan'          => ['required', 'in:dine_in,take_away'],
-            'waktu_pengambilan'     => ['nullable', 'required_if:tipe_pesanan,take_away,online', 'date', 'after:now'],
+            'waktu_pengambilan'     => ['nullable', 'required_if:tipe_pesanan,take_away', 'date', 'after:now'],
             'metode_pembayaran'     => ['required', 'in:Transfer Bank,QRIS'],
             // jumlah_orang: wajib diisi saat Dine In, diabaikan saat Take Away
             'jumlah_orang'          => [
