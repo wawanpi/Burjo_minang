@@ -28,17 +28,28 @@ class OrderManagementController extends Controller
      */
     public function index(Request $request)
     {
-        // Auto-Cancel Dinamis untuk Pesanan Kasir (Digital) yang menggantung > 5 menit
-        $expiredOrders = Order::with(['payment', 'orderItems'])
-            ->whereHas('payment', function($q) {
+        // Auto-Cancel Dinamis untuk Pesanan Kasir (Digital) yang menggantung > 5 menit.
+        //
+        // Bug #6 (race condition): tiap pembatalan dibungkus DB::transaction +
+        // lockForUpdate dan memeriksa ulang status di dalam lock, agar pesanan
+        // yang baru saja dilunasi via webhook Midtrans tidak ikut dibatalkan.
+        $expiredOrderIds = Order::whereHas('payment', function($q) {
                 $q->where('metode_pembayaran', '!=', 'Tunai');
             })
             ->where('status_pesanan', 'menunggu_pembayaran')
             ->where('created_at', '<', Carbon::now()->subMinutes(5))
-            ->get();
+            ->pluck('id');
 
-        if ($expiredOrders->count() > 0) {
-            foreach ($expiredOrders as $expOrder) {
+        foreach ($expiredOrderIds as $expiredId) {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($expiredId) {
+                $expOrder = Order::with(['payment', 'orderItems'])
+                    ->lockForUpdate()
+                    ->find($expiredId);
+
+                if (!$expOrder || $expOrder->status_pesanan !== 'menunggu_pembayaran') {
+                    return;
+                }
+
                 $expOrder->update(['status_pesanan' => 'batal']);
                 if ($expOrder->payment) {
                     $expOrder->payment->update(['status_pembayaran' => 'gagal']);
@@ -47,7 +58,7 @@ class OrderManagementController extends Controller
                 foreach ($expOrder->orderItems as $item) {
                     \App\Models\Menu::where('id', $item->menu_id)->increment('stok', $item->jumlah);
                 }
-            }
+            });
         }
 
         $status = $request->input('status');

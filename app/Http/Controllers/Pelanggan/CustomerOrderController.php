@@ -28,6 +28,16 @@ use Illuminate\Validation\ValidationException;
 class CustomerOrderController extends Controller
 {
     /**
+     * Batas waktu pembayaran (menit) untuk pesanan online.
+     *
+     * Bug #6: Satu sumber kebenaran agar durasi expiry Midtrans (custom_expiry
+     * pada Snap) dan durasi auto-cancel di sisi aplikasi SELALU sama, sehingga
+     * tidak ada window waktu di mana Midtrans masih menerima pembayaran tetapi
+     * aplikasi sudah membatalkan pesanan.
+     */
+    private const PAYMENT_EXPIRY_MINUTES = 5;
+
+    /**
      * Menampilkan halaman menu pemesanan online untuk pelanggan.
      *
      * Menu ditampilkan beserta rating rata-rata dan jumlah review
@@ -207,11 +217,11 @@ class CustomerOrderController extends Controller
                 'item_details' => $itemDetails,
                 // Batasi UI Midtrans sesuai pilihan pembayaran
                 'enabled_payments' => $enabledPayments,
-                // Custom Expiry 3 Menit (fast food)
+                // Custom Expiry — disamakan dengan auto-cancel aplikasi (Bug #6)
                 'custom_expiry' => [
                     'start_time' => now()->format('Y-m-d H:i:s O'),
                     'unit'       => 'minute',
-                    'duration'   => 3,
+                    'duration'   => self::PAYMENT_EXPIRY_MINUTES,
                 ],
             ];
 
@@ -368,26 +378,40 @@ class CustomerOrderController extends Controller
      */
     public function orders(Request $request)
     {
-        // 1. Auto-Cancel Dinamis: Batalkan pesanan 'menunggu_pembayaran' yang umurnya > 5 menit
-        $expiredOrders = Order::with(['orderItems', 'payment'])
-            ->where('user_id', auth()->id())
+        // 1. Auto-Cancel Dinamis: Batalkan pesanan 'menunggu_pembayaran' yang sudah expired.
+        //
+        // Bug #6 (race condition): Setiap pembatalan dibungkus DB::transaction +
+        // lockForUpdate dan MEMERIKSA ULANG status di dalam lock. Jika webhook
+        // Midtrans (yang juga memakai lockForUpdate) lebih dulu menandai pesanan
+        // 'diproses'/'lunas', pengecekan ulang akan melewati pesanan itu — mencegah
+        // pesanan yang sudah dibayar ikut dibatalkan & di-restock.
+        $expiredOrderIds = Order::where('user_id', auth()->id())
             ->where('status_pesanan', 'menunggu_pembayaran')
-            ->where('created_at', '<', now()->subMinutes(5))
-            ->get();
+            ->where('created_at', '<', now()->subMinutes(self::PAYMENT_EXPIRY_MINUTES))
+            ->pluck('id');
 
-        if ($expiredOrders->count() > 0) {
-            foreach ($expiredOrders as $expOrder) {
+        foreach ($expiredOrderIds as $expiredId) {
+            DB::transaction(function () use ($expiredId) {
+                $expOrder = Order::with(['orderItems', 'payment'])
+                    ->lockForUpdate()
+                    ->find($expiredId);
+
+                // Re-check di dalam lock: hanya batalkan jika MASIH menunggu_pembayaran.
+                if (!$expOrder || $expOrder->status_pesanan !== 'menunggu_pembayaran') {
+                    return;
+                }
+
                 $expOrder->update(['status_pesanan' => 'batal']);
-                
+
                 if ($expOrder->payment) {
                     $expOrder->payment->update(['status_pembayaran' => 'gagal']);
                 }
-                
-                // Kembalikan stok menu jika pesanan dibatalkan otomatis
+
+                // Kembalikan stok menu karena pesanan dibatalkan otomatis
                 foreach ($expOrder->orderItems as $item) {
                     Menu::where('id', $item->menu_id)->increment('stok', $item->jumlah);
                 }
-            }
+            });
         }
 
         $tab = $request->input('tab', 'aktif'); // 'aktif' atau 'riwayat'
