@@ -267,11 +267,19 @@ class CustomerOrderController extends Controller
     }
 
     /**
-     * Update status pesanan berdasarkan callback Snap.js dari frontend.
+     * Sinkronisasi status pembayaran setelah popup Midtrans Snap ditutup.
      *
-     * Method ini dipanggil via AJAX setelah popup Midtrans Snap ditutup.
-     * Berfungsi sebagai update UI realtime — webhook Midtrans tetap
-     * menjadi sumber kebenaran utama (source of truth).
+     * Method ini dipanggil via AJAX dari callback Snap.js (onSuccess / onPending /
+     * onClose). Callback frontend TIDAK dipercaya sebagai bukti pembayaran —
+     * status 'success' dari frontend hanya menjadi PEMICU untuk memverifikasi
+     * ulang transaksi langsung ke server Midtrans (Transaction::status()).
+     *
+     * Aturan keamanan (Bug #1 — cegah "free order"):
+     * - Endpoint ini TIDAK PERNAH menandai 'lunas' hanya karena input frontend.
+     * - Status 'lunas' + 'diproses' hanya ditulis jika Midtrans mengonfirmasi
+     *   transaction_status = settlement / capture (fraud accept).
+     * - Webhook (PaymentCallbackController) tetap menjadi sumber kebenaran utama;
+     *   verifikasi di sini hanya mempercepat pembaruan UI, bukan menggantikannya.
      *
      * @param  \Illuminate\Http\Request  $request
      * @param  \App\Models\Order         $order
@@ -284,7 +292,7 @@ class CustomerOrderController extends Controller
             return response()->json(['message' => 'Aksi tidak diizinkan.'], 403);
         }
 
-        $validated = $request->validate([
+        $request->validate([
             'status' => ['required', 'in:success,pending'],
         ]);
 
@@ -299,28 +307,53 @@ class CustomerOrderController extends Controller
             ]);
         }
 
-        if ($validated['status'] === 'success') {
-            $order->update(['status_pesanan' => 'diproses']);
-            if ($payment) {
-                $payment->update(['status_pembayaran' => 'lunas']);
-            }
-        } elseif ($validated['status'] === 'pending') {
-            // Tetap di 'menunggu_pembayaran' — jangan ubah ke status lain
-            // Webhook Midtrans akan mengupdate ketika pembayaran masuk
-            $order->update(['status_pesanan' => 'menunggu_pembayaran']);
-            if ($payment) {
-                $payment->update(['status_pembayaran' => 'pending']);
+        // Apa pun input frontend, status 'lunas' HANYA boleh berasal dari
+        // konfirmasi server Midtrans. Kita verifikasi ulang ke Midtrans, bukan
+        // mempercayai payload 'success' dari browser.
+        if ($payment && $payment->transaction_id) {
+            \Midtrans\Config::$serverKey    = env('MIDTRANS_SERVER_KEY');
+            \Midtrans\Config::$isProduction = env('MIDTRANS_IS_PRODUCTION', false);
+
+            try {
+                $midtransStatus   = \Midtrans\Transaction::status($payment->transaction_id);
+                $trxStatus        = $midtransStatus->transaction_status ?? null;
+                $fraudStatus      = $midtransStatus->fraud_status ?? null;
+
+                $isPaid = $trxStatus === 'settlement'
+                    || ($trxStatus === 'capture' && $fraudStatus !== 'challenge');
+
+                if ($isPaid) {
+                    // Terverifikasi lunas oleh server Midtrans
+                    $order->update(['status_pesanan' => 'diproses']);
+                    $payment->update(['status_pembayaran' => 'lunas']);
+                } elseif (in_array($trxStatus, ['expire', 'cancel', 'deny'])) {
+                    // Midtrans menyatakan gagal → serahkan ke webhook untuk restock,
+                    // di sini cukup tandai gagal agar UI konsisten
+                    $payment->update(['status_pembayaran' => 'gagal']);
+                } else {
+                    // pending / belum terbayar → jangan pernah set lunas
+                    $payment->update(['status_pembayaran' => 'pending']);
+                }
+
+                Log::info('Snap.js Callback: Status diverifikasi ke server Midtrans', [
+                    'order_id'           => $order->id,
+                    'transaction_status' => $trxStatus,
+                    'hasil'              => $order->fresh()->status_pesanan,
+                ]);
+            } catch (\Exception $e) {
+                // Gagal menghubungi Midtrans → JANGAN ubah apa pun ke lunas.
+                // Biarkan webhook Midtrans yang menuntaskan status nanti.
+                Log::warning('Snap.js Callback: Gagal verifikasi status ke Midtrans', [
+                    'order_id' => $order->id,
+                    'error'    => $e->getMessage(),
+                ]);
             }
         }
 
-        Log::info('Snap.js Callback: Status pesanan diperbarui dari frontend', [
-            'order_id' => $order->id,
-            'status'   => $validated['status'],
-        ]);
-
+        // Kembalikan status terkini dari database untuk refresh UI.
         return response()->json([
-            'message' => 'Status berhasil diperbarui.',
-            'status'  => $order->status_pesanan,
+            'message' => 'Status disinkronkan.',
+            'status'  => $order->fresh()->status_pesanan,
         ]);
     }
 
