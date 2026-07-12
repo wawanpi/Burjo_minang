@@ -67,10 +67,14 @@ class DashboardController extends Controller
         }
 
         // ─── LOGIKA KHUSUS OWNER ───
-        // 1. Total Pendapatan: Sum total_harga dari orders yang payment-nya lunas
+        // 1. Total Pendapatan: Sum total_harga dari order yang LUNAS + SELESAI.
+        //    Bug #4: definisi "pendapatan" disamakan dengan Laporan Keuangan
+        //    (LaporanController tab keuangan) agar angka konsisten di kedua halaman.
         $totalPendapatan = Order::whereHas('payment', function ($query) {
             $query->where('status_pembayaran', 'lunas');
-        })->sum('total_harga');
+        })
+        ->where('status_pesanan', 'selesai')
+        ->sum('total_harga');
 
         // 2. Pesanan Pending: Count orders yang statusnya menunggu_pembayaran atau diproses
         $pesananPending = Order::whereIn('status_pesanan', ['menunggu_pembayaran', 'diproses'])->count();
@@ -83,6 +87,7 @@ class DashboardController extends Controller
         $pendapatanBulan = Order::whereHas('payment', function ($query) {
             $query->where('status_pembayaran', 'lunas');
         })
+        ->where('status_pesanan', 'selesai') // Bug #4: konsisten dengan Laporan Keuangan
         ->whereMonth('tanggal_pesan', now()->month)
         ->whereYear('tanggal_pesan', now()->year)
         ->sum('total_harga');
@@ -99,6 +104,7 @@ class DashboardController extends Controller
         $chart_data = Order::whereHas('payment', function ($query) {
                 $query->where('status_pembayaran', 'lunas');
             })
+            ->where('status_pesanan', 'selesai') // Bug #4: konsisten dengan Laporan Keuangan
             ->where('tanggal_pesan', '>=', now()->subDays(29))
             ->selectRaw('DATE(tanggal_pesan) as date, SUM(total_harga) as pendapatan')
             ->groupBy('date')
@@ -131,6 +137,10 @@ class DashboardController extends Controller
         $maxTerjual = null;
         $menu_terlaris = OrderItem::whereHas('order.payment', function ($query) {
                 $query->where('status_pembayaran', 'lunas');
+            })
+            // Bug #4: hitung terjual hanya dari order yang sudah SELESAI (konsisten dg pendapatan)
+            ->whereHas('order', function ($query) {
+                $query->where('status_pesanan', 'selesai');
             })
             ->selectRaw('menu_id, SUM(jumlah) as total_terjual, SUM(subtotal) as total_pendapatan')
             ->groupBy('menu_id')
