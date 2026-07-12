@@ -54,7 +54,7 @@ class OrderManagementController extends Controller
 
         // ─── 1. Pesanan Hari Ini ───
         $pesanan_hari_ini = Order::query()
-            ->with(['user:id,name,email,no_hp', 'orderItems.menu' => fn ($q) => $q->withTrashed(), 'payment'])
+            ->with(['user' => fn ($q) => $q->withTrashed(), 'orderItems.menu' => fn ($q) => $q->withTrashed(), 'payment'])
             ->where(function ($query) {
                 // Termasuk pesanan dengan waktu_pengambilan hari ini atau sebelumnya, ATAU yang tidak punya waktu spesifik
                 $query->whereDate('waktu_pengambilan', '<=', Carbon::today())
@@ -74,7 +74,7 @@ class OrderManagementController extends Controller
 
         // ─── 2. Pesanan Pre-Order (PO) Mendatang ───
         $pesanan_po_mendatang = Order::query()
-            ->with(['user:id,name,email,no_hp', 'orderItems.menu' => fn ($q) => $q->withTrashed(), 'payment'])
+            ->with(['user' => fn ($q) => $q->withTrashed(), 'orderItems.menu' => fn ($q) => $q->withTrashed(), 'payment'])
             ->whereDate('waktu_pengambilan', '>', Carbon::today())
             ->whereIn('status_pesanan', ['menunggu_pembayaran', 'diproses'])
             ->when($status, function ($query, $status) {
@@ -175,7 +175,7 @@ class OrderManagementController extends Controller
      */
     public function printNota(Order $order)
     {
-        $order->load(['user:id,name,email,no_hp', 'orderItems.menu' => fn ($q) => $q->withTrashed(), 'payment']);
+        $order->load(['user' => fn ($q) => $q->withTrashed(), 'orderItems.menu' => fn ($q) => $q->withTrashed(), 'payment']);
 
         return Inertia::render('Kasir/Orders/Nota', [
             'order' => $order,
@@ -188,7 +188,7 @@ class OrderManagementController extends Controller
      */
     public function printStruk(Order $order)
     {
-        $order->load(['user:id,name', 'orderItems.menu' => fn ($q) => $q->withTrashed(), 'payment']);
+        $order->load(['user' => fn ($q) => $q->withTrashed(), 'orderItems.menu' => fn ($q) => $q->withTrashed(), 'payment']);
 
         return view('kasir.struk', [
             'order' => $order,

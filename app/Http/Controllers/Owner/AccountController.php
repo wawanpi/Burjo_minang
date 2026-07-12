@@ -120,16 +120,21 @@ class AccountController extends Controller
     }
 
     /**
-     * Hapus akun kasir dari database.
+     * Nonaktifkan (soft delete) akun kasir/pelanggan.
+     *
+     * Bug #3: Model User memakai trait SoftDeletes, sehingga delete() hanya
+     * mengisi deleted_at tanpa memicu cascade fisik pada orders/payments.
+     * Data transaksi historis milik akun tetap utuh untuk laporan keuangan,
+     * dan akun yang dinonaktifkan otomatis tidak bisa login lagi.
      */
     public function destroy(User $account)
     {
         abort_if($account->role === 'owner', 403);
 
-        $account->delete();
+        $account->delete(); // soft delete (mengisi deleted_at)
 
         return redirect()
             ->route('owner.accounts.index')
-            ->with('success', 'Akun berhasil dihapus.');
+            ->with('success', 'Akun berhasil dinonaktifkan.');
     }
 }

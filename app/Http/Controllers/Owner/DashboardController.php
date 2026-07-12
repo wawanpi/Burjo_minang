@@ -45,7 +45,7 @@ class DashboardController extends Controller
 
             // Antrean terbaru hari ini: prioritaskan yang butuh tindakan (diproses/pending dulu)
             // CASE WHEN dipakai (bukan FIELD()) agar portabel di semua database (MySQL/MariaDB/SQLite)
-            $antrean_terbaru = Order::with(['user:id,name'])
+            $antrean_terbaru = Order::with(['user' => fn ($q) => $q->withTrashed()])
                 ->whereDate('tanggal_pesan', today())
                 ->orderByRaw("CASE status_pesanan WHEN 'menunggu_pembayaran' THEN 1 WHEN 'diproses' THEN 2 WHEN 'selesai' THEN 3 WHEN 'batal' THEN 4 ELSE 5 END")
                 ->latest('tanggal_pesan')
@@ -111,7 +111,7 @@ class DashboardController extends Controller
 
         // 4. Recent Orders (Pesanan Terbaru): 5 pesanan terbaru dengan eager load user & payment
         $recent_orders = Order::with([
-                'user:id,name,email',
+                'user' => fn ($q) => $q->withTrashed(), // Bug #3: nama pelanggan nonaktif tetap tampil
                 'payment:id,order_id,metode_pembayaran,status_pembayaran'
             ])
             ->latest('tanggal_pesan')

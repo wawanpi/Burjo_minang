@@ -30,7 +30,7 @@ class LaporanController extends Controller
 
         // ── Base Query: filter tanggal & tipe pesanan ──
         $baseQuery = Order::with([
-                'user:id,name,email,no_hp',
+                'user' => fn ($q) => $q->withTrashed(), // Bug #3: nama pelanggan nonaktif tetap tampil
                 'payment:id,order_id,metode_pembayaran,status_pembayaran',
                 'orderItems.menu' => fn ($q) => $q->withTrashed(), // Bug #2: pertahankan menu historis
             ])
@@ -140,7 +140,7 @@ class LaporanController extends Controller
 
         // Ambil SEMUA order LUNAS + SELESAI tanpa pagination untuk keperluan cetak
         $orders = Order::with([
-                'user:id,name,email',
+                'user' => fn ($q) => $q->withTrashed(), // Bug #3: nama pelanggan nonaktif tetap tampil
                 'payment:id,order_id,metode_pembayaran,status_pembayaran',
             ])
             ->whereHas('payment', function ($sub) {
