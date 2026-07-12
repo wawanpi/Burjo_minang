@@ -41,8 +41,8 @@ class PaymentCallbackController extends Controller
     public function callback(Request $request)
     {
         // ── 1. Konfigurasi & Inisialisasi Midtrans Notification ──────────────
-        \Midtrans\Config::$serverKey    = env('MIDTRANS_SERVER_KEY');
-        \Midtrans\Config::$isProduction = env('MIDTRANS_IS_PRODUCTION', false);
+        \Midtrans\Config::$serverKey    = config('midtrans.server_key');
+        \Midtrans\Config::$isProduction = config('midtrans.is_production');
 
         try {
             // Class Notification otomatis membaca payload POST dan

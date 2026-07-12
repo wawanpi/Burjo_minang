@@ -170,8 +170,8 @@ class CustomerOrderController extends Controller
             DB::commit();
 
             // ── Integrasi Midtrans Snap: Generate Snap Token ───────────
-            \Midtrans\Config::$serverKey    = env('MIDTRANS_SERVER_KEY');
-            \Midtrans\Config::$isProduction = env('MIDTRANS_IS_PRODUCTION', false);
+            \Midtrans\Config::$serverKey    = config('midtrans.server_key');
+            \Midtrans\Config::$isProduction = config('midtrans.is_production');
             \Midtrans\Config::$isSanitized  = true;
             \Midtrans\Config::$is3ds        = true;
 
@@ -311,8 +311,8 @@ class CustomerOrderController extends Controller
         // konfirmasi server Midtrans. Kita verifikasi ulang ke Midtrans, bukan
         // mempercayai payload 'success' dari browser.
         if ($payment && $payment->transaction_id) {
-            \Midtrans\Config::$serverKey    = env('MIDTRANS_SERVER_KEY');
-            \Midtrans\Config::$isProduction = env('MIDTRANS_IS_PRODUCTION', false);
+            \Midtrans\Config::$serverKey    = config('midtrans.server_key');
+            \Midtrans\Config::$isProduction = config('midtrans.is_production');
 
             try {
                 $midtransStatus   = \Midtrans\Transaction::status($payment->transaction_id);
