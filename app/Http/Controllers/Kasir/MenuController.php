@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Kasir;
 use App\Http\Controllers\Controller;
 use App\Models\Menu;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
@@ -93,6 +94,10 @@ class MenuController extends Controller
         ]);
 
         if ($request->hasFile('gambar')) {
+            // Bug #7: hapus gambar lama agar tidak menumpuk sebagai orphan file.
+            if ($menu->gambar && Storage::disk('public')->exists($menu->gambar)) {
+                Storage::disk('public')->delete($menu->gambar);
+            }
             $validated['gambar'] = $request->file('gambar')->store('menu-images', 'public');
         } else {
             unset($validated['gambar']);
