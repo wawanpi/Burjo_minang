@@ -35,8 +35,14 @@ class CustomerOrderController extends Controller
      * pada Snap) dan durasi auto-cancel di sisi aplikasi SELALU sama, sehingga
      * tidak ada window waktu di mana Midtrans masih menerima pembayaran tetapi
      * aplikasi sudah membatalkan pesanan.
+     *
+     * LIM-4: nilai dibaca dari config('midtrans.payment_expiry_minutes')
+     * (env MIDTRANS_PAYMENT_EXPIRY_MINUTES), tidak lagi hardcoded.
      */
-    private const PAYMENT_EXPIRY_MINUTES = 5;
+    private function paymentExpiryMinutes(): int
+    {
+        return (int) config('midtrans.payment_expiry_minutes', 5);
+    }
 
     /**
      * Menampilkan halaman menu pemesanan online untuk pelanggan.
@@ -222,7 +228,7 @@ class CustomerOrderController extends Controller
                 'custom_expiry' => [
                     'start_time' => now()->format('Y-m-d H:i:s O'),
                     'unit'       => 'minute',
-                    'duration'   => self::PAYMENT_EXPIRY_MINUTES,
+                    'duration'   => $this->paymentExpiryMinutes(),
                 ],
             ];
 
@@ -392,7 +398,7 @@ class CustomerOrderController extends Controller
         // pesanan yang sudah dibayar ikut dibatalkan & di-restock.
         $expiredOrderIds = Order::where('user_id', auth()->id())
             ->where('status_pesanan', 'menunggu_pembayaran')
-            ->where('created_at', '<', now()->subMinutes(self::PAYMENT_EXPIRY_MINUTES))
+            ->where('created_at', '<', now()->subMinutes($this->paymentExpiryMinutes()))
             ->pluck('id');
 
         foreach ($expiredOrderIds as $expiredId) {

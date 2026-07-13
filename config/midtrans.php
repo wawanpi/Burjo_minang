@@ -19,4 +19,13 @@ return [
     'is_production' => (bool) env('MIDTRANS_IS_PRODUCTION', false),
     'is_sanitized'  => true,
     'is_3ds'        => true,
+
+    /*
+     * LIM-4: Batas waktu pembayaran (menit) — dipakai untuk custom_expiry Snap
+     * Midtrans DAN auto-cancel pesanan menggantung di sisi aplikasi (harus sama
+     * agar tidak ada window pembayaran masuk setelah pesanan dibatalkan).
+     * Sebelumnya di-hardcode (5 di customer, 3 di POS). Atur via .env bila user
+     * menilai terlalu singkat/panjang.
+     */
+    'payment_expiry_minutes' => (int) env('MIDTRANS_PAYMENT_EXPIRY_MINUTES', 5),
 ];

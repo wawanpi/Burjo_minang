@@ -37,7 +37,8 @@ class OrderManagementController extends Controller
                 $q->where('metode_pembayaran', '!=', 'Tunai');
             })
             ->where('status_pesanan', 'menunggu_pembayaran')
-            ->where('created_at', '<', Carbon::now()->subMinutes(5))
+            // LIM-4: durasi auto-cancel dari config (env), selaras custom_expiry Midtrans
+            ->where('created_at', '<', Carbon::now()->subMinutes((int) config('midtrans.payment_expiry_minutes', 5)))
             ->pluck('id');
 
         foreach ($expiredOrderIds as $expiredId) {

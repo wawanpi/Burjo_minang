@@ -311,7 +311,8 @@ class PosController extends Controller
             'enabled_payments' => $enabledPayments,
             // Batas waktu pembayaran 3 menit untuk transaksi kasir (fast food)
             'custom_expiry'    => [
-                'expiry_duration' => 3,
+                // LIM-4: durasi dari config (env), tidak lagi hardcoded
+                'expiry_duration' => (int) config('midtrans.payment_expiry_minutes', 5),
                 'unit'            => 'minute',
             ],
         ];
