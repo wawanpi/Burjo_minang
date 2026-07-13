@@ -190,7 +190,12 @@ class PaymentCallbackController extends Controller
             }
 
             // ── 5. Simpan Pembaruan ke Database ───────────────────────────────────
-            $order->update(['status_pesanan' => $orderStatus]);
+            $orderUpdate = ['status_pesanan' => $orderStatus];
+            // Bug E-3: catat waktu mulai diproses (sekali, saat pembayaran dikonfirmasi)
+            if ($orderStatus === 'diproses' && !$order->diproses_at) {
+                $orderUpdate['diproses_at'] = now();
+            }
+            $order->update($orderUpdate);
 
             if ($payment) {
                 $payment->update(['status_pembayaran' => $paymentStatus]);

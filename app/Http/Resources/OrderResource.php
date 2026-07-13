@@ -24,7 +24,10 @@ class OrderResource extends JsonResource
             'sisa_menit'        => $this->waktu_pengambilan ? (int) round(now()->diffInMinutes(Carbon::parse($this->waktu_pengambilan), false)) : null,
             // Bug E-2: timer "berjalan" (elapsed) hanya untuk pesanan TANPA waktu_pengambilan
             // (dine_in langsung). Pesanan dengan waktu pengambilan memakai sisa_menit (hitung mundur).
-            'durasi_menit'      => !$this->waktu_pengambilan ? (int) abs(now()->diffInMinutes(Carbon::parse($this->created_at))) : null,
+            // Bug E-3: dihitung sejak diproses_at (mulai diproses); fallback created_at untuk order lama.
+            'durasi_menit'      => !$this->waktu_pengambilan
+                ? (int) abs(now()->diffInMinutes(Carbon::parse($this->diproses_at ?? $this->created_at)))
+                : null,
             'jumlah_orang'      => $this->jumlah_orang,
             'status_pembayaran' => $this->payment?->status_pembayaran,
             'metode_pembayaran' => $this->payment?->metode_pembayaran,

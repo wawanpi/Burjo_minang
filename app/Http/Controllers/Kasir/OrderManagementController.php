@@ -154,7 +154,12 @@ class OrderManagementController extends Controller
             }
         }
 
-        $order->update(['status_pesanan' => $newStatus]);
+        $orderUpdate = ['status_pesanan' => $newStatus];
+        // Bug E-3: catat waktu mulai diproses (sekali, saat pertama masuk 'diproses')
+        if ($newStatus === 'diproses' && !$order->diproses_at) {
+            $orderUpdate['diproses_at'] = now();
+        }
+        $order->update($orderUpdate);
 
         // Jika pesanan selesai dan ada payment, tandai lunas
         if ($newStatus === 'selesai' && $order->payment) {

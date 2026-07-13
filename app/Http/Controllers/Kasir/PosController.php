@@ -130,6 +130,7 @@ class PosController extends Controller
                 'status_pesanan'  => 'diproses', // Diubah menjadi diproses agar terlihat di dapur
                 'tipe_pesanan'    => $validated['tipe_pesanan'],
                 'tanggal_pesan'   => now(),
+                'diproses_at'     => now(), // Bug E-3: tunai langsung diproses saat dibuat
             ]);
 
             // 3. Buat record di tabel order_items & Kurangi stok

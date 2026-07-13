@@ -334,7 +334,11 @@ class CustomerOrderController extends Controller
 
                 if ($isPaid) {
                     // Terverifikasi lunas oleh server Midtrans
-                    $order->update(['status_pesanan' => 'diproses']);
+                    $order->update([
+                        'status_pesanan' => 'diproses',
+                        // Bug E-3: catat waktu mulai diproses (sekali)
+                        'diproses_at'    => $order->diproses_at ?? now(),
+                    ]);
                     $payment->update(['status_pembayaran' => 'lunas']);
                 } elseif (in_array($trxStatus, ['expire', 'cancel', 'deny'])) {
                     // Midtrans menyatakan gagal → serahkan ke webhook untuk restock,

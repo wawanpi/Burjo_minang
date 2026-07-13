@@ -16,6 +16,7 @@ class Order extends Model
         'tanggal_pesan',
         'tipe_pesanan',
         'waktu_pengambilan',
+        'diproses_at',
         'jumlah_orang',
     ];
 
@@ -24,6 +25,7 @@ class Order extends Model
         return [
             'total_harga'   => 'decimal:2',
             'tanggal_pesan' => 'datetime',
+            'diproses_at'   => 'datetime',
             'jumlah_orang'  => 'integer',
         ];
     }
