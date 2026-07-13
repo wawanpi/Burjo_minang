@@ -276,15 +276,17 @@ class PosController extends Controller
         \Midtrans\Config::$isSanitized  = true;
         \Midtrans\Config::$is3ds        = true;
 
-        // Susun item_details untuk Midtrans
+        // Susun item_details untuk Midtrans dari data AMAN (order_items DB),
+        // bukan cart_items frontend. Bug G-2: menjamin Σ(price×qty) == gross_amount
+        // (order->total_harga) agar Midtrans tidak menolak karena mismatch harga.
+        $order->load('orderItems.menu');
         $itemDetails = [];
-        foreach ($validated['cart_items'] as $item) {
-            $menu = Menu::find($item['menu_id']);
+        foreach ($order->orderItems as $item) {
             $itemDetails[] = [
-                'id'       => (string) $item['menu_id'],
-                'price'    => (int) ($item['subtotal'] / $item['jumlah']),
-                'quantity' => (int) $item['jumlah'],
-                'name'     => $menu ? substr($menu->nama_menu, 0, 50) : 'Menu #' . $item['menu_id'],
+                'id'       => (string) $item->menu_id,
+                'price'    => (int) ($item->subtotal / $item->jumlah),
+                'quantity' => (int) $item->jumlah,
+                'name'     => $item->menu ? substr($item->menu->nama_menu, 0, 50) : 'Menu #' . $item->menu_id,
             ];
         }
 
