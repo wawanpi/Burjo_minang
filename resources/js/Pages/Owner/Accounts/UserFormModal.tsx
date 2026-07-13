@@ -84,21 +84,6 @@ const UserFormModal = ({
           required={!isEditMode && !!data.password}
         />
 
-        <div className="flex flex-col gap-1">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Role</label>
-          <select
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-600 text-sm
-                       bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100
-                       focus:outline-none focus:ring-2 focus:ring-bm-gold-400"
-            value={data.role}
-            onChange={(e) => setData('role', e.target.value)}
-            required
-          >
-            <option value="kasir">Kasir</option>
-            <option value="pelanggan">Pelanggan</option>
-          </select>
-        </div>
-
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="ghost" type="button" onClick={handleClose}>
             Batal

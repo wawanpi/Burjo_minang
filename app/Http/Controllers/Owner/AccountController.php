@@ -21,7 +21,7 @@ class AccountController extends Controller
     {
         $search = $request->input('search');
 
-        $users = User::whereIn('role', ['kasir', 'pelanggan'])
+        $users = User::where('role', 'kasir')
             // Grouping closure WAJIB agar orWhere tidak menembus filter role
             ->when($search, function ($query, $search) {
                 $query->where(function ($q) use ($search) {
@@ -57,15 +57,15 @@ class AccountController extends Controller
             'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
             'no_hp'    => ['required', 'string', 'max:15', 'unique:users,no_hp', 'regex:/^(?:\+62|62|0)8[1-9][0-9]{7,11}$/'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role'     => ['required', 'string', 'in:kasir,pelanggan'],
         ]);
 
+        // Manajemen Akun owner khusus mengelola KASIR — role selalu 'kasir'.
         User::create([
             'name'     => $validated['name'],
             'email'    => $validated['email'],
             'no_hp'    => $validated['no_hp'],
             'password' => Hash::make($validated['password']),
-            'role'     => $validated['role'],
+            'role'     => 'kasir',
             // Akun dibuat oleh Owner = dipercaya, langsung terverifikasi
             // agar tidak terkena middleware 'verified'.
             'email_verified_at' => now(),
@@ -82,7 +82,7 @@ class AccountController extends Controller
     public function edit(User $account)
     {
         // Pastikan owner tidak bisa edit sesama owner
-        abort_if($account->role === 'owner', 403);
+        abort_unless($account->role === 'kasir', 403);
 
         return Inertia::render('Owner/Accounts/Edit', [
             'user' => $account->only('id', 'name', 'email', 'role'),
@@ -94,20 +94,19 @@ class AccountController extends Controller
      */
     public function update(Request $request, User $account)
     {
-        abort_if($account->role === 'owner', 403);
+        abort_unless($account->role === 'kasir', 403);
 
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
             'email'    => ['required', 'email', 'max:255', Rule::unique('users')->ignore($account->id)],
             'no_hp'    => ['required', 'string', 'max:15', Rule::unique('users')->ignore($account->id), 'regex:/^(?:\+62|62|0)8[1-9][0-9]{7,11}$/'],
             'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-            'role'     => ['required', 'string', 'in:kasir,pelanggan'],
         ]);
 
+        // Role tidak diubah dari sini — akun yang dikelola selalu kasir.
         $account->name  = $validated['name'];
         $account->email = $validated['email'];
         $account->no_hp = $validated['no_hp'];
-        $account->role  = $validated['role'];
 
         if (! empty($validated['password'])) {
             $account->password = Hash::make($validated['password']);
@@ -135,7 +134,7 @@ class AccountController extends Controller
      */
     public function destroy(User $account)
     {
-        abort_if($account->role === 'owner', 403);
+        abort_unless($account->role === 'kasir', 403);
 
         DB::transaction(function () use ($account) {
             $account->update([

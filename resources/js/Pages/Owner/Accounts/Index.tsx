@@ -115,7 +115,7 @@ export default function Index({ users, filters }: Props) {
             </div>
             <div className="bm-gold-underline mt-3" />
             <p className="text-sm text-bm-text-muted mt-2">
-              Kelola akun kasir dan pelanggan — Total {users.length} pengguna terdaftar
+              Kelola akun kasir — Total {users.length} kasir terdaftar
             </p>
           </div>
           <div className="flex items-center gap-3">
