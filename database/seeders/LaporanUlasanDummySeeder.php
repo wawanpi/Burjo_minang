@@ -16,15 +16,19 @@ use Illuminate\Support\Facades\Hash;
  * LaporanUlasanDummySeeder — data dummy (non-produksi) untuk mengisi
  * halaman Laporan Keuangan Owner dan halaman Ulasan.
  *
- * - Membuat beberapa pelanggan dummy.
+ * ⚠️  HANYA UNTUK LOKAL / DEMO — JANGAN dipanggil dari DatabaseSeeder.
+ *     Seeder ini membuat order/payment/review PALSU. Karena
+ *     docker/entrypoint.sh menjalankan `db:seed --force` otomatis tiap
+ *     deploy, memanggilnya di jalur production akan mengotori data keuangan.
+ *     Jalankan manual di lokal saja:
+ *        php artisan db:seed --class=LaporanUlasanDummySeeder
+ *
+ * - Membuat beberapa pelanggan dummy (@contoh.com).
  * - Membuat banyak order SELESAI + LUNAS tersebar di ~90 hari terakhir
  *   (dengan tipe & metode bayar bervariasi) agar Laporan Keuangan berisi.
  * - Membuat sejumlah ulasan bintang 1–5 pada menu acak.
  *
  * Idempotent: dilewati jika data dummy sudah ada, jadi aman dijalankan ulang.
- *
- * Jalankan manual:
- *   php artisan db:seed --class=LaporanUlasanDummySeeder
  */
 class LaporanUlasanDummySeeder extends Seeder
 {

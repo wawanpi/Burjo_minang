@@ -58,15 +58,17 @@ class DatabaseSeeder extends Seeder
             'pelanggan@gmail.com',
         ])->whereNull('email_verified_at')->update(['email_verified_at' => now()]);
 
-        // Seed daftar menu awal
+        // Seed daftar menu awal (idempotent — aman dipanggil tiap deploy)
         $this->call(MenuSeeder::class);
 
-        // Seed data dummy Laporan Keuangan & Ulasan (untuk demo/TA).
-        // Idempotent: hanya mengisi sekali, deploy berikutnya dilewati.
-        // Hapus baris ini jika tidak ingin data dummy ikut ter-deploy.
-        $this->call(LaporanUlasanDummySeeder::class);
-
-        // Data dummy Laporan Keuangan tambahan: Januari–sekarang (per bulan).
-        $this->call(LaporanKeuanganTambahanSeeder::class);
+        // ── SEEDER DUMMY: SENGAJA TIDAK DIPANGGIL DI JALUR PRODUCTION ──
+        // LaporanUlasanDummySeeder & LaporanKeuanganTambahanSeeder membuat
+        // order/payment/review PALSU. Karena docker/entrypoint.sh menjalankan
+        // `php artisan db:seed --force` otomatis tiap deploy, memanggilnya di
+        // sini akan mengotori data keuangan production.
+        //
+        // Jalankan HANYA manual di lokal saat butuh data demo:
+        //   php artisan db:seed --class=LaporanUlasanDummySeeder
+        //   php artisan db:seed --class=LaporanKeuanganTambahanSeeder
     }
 }

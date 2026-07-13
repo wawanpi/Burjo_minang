@@ -15,14 +15,18 @@ use Illuminate\Support\Facades\Hash;
  * LaporanKeuanganTambahanSeeder — data dummy (non-produksi) tambahan untuk
  * Laporan Keuangan agar terisi dari Januari tahun berjalan sampai sekarang.
  *
+ * ⚠️  HANYA UNTUK LOKAL / DEMO — JANGAN dipanggil dari DatabaseSeeder.
+ *     Seeder ini membuat order/payment PALSU (penanda transaction_id
+ *     'DUMMYJAN-'). Karena docker/entrypoint.sh menjalankan `db:seed --force`
+ *     otomatis tiap deploy, memanggilnya di jalur production akan mengotori
+ *     data keuangan. Jalankan manual di lokal saja:
+ *        php artisan db:seed --class=LaporanKeuanganTambahanSeeder
+ *
  * Menghasilkan order SELESAI + LUNAS pada SETIAP bulan (Jan..bulan ini),
  * sehingga laporan/grafik bulanan punya data di seluruh rentang.
  *
  * Idempotent: ditandai lewat prefix transaction_id 'DUMMYJAN-'. Jika sudah
- * ada, seeder dilewati — aman ikut jalan tiap deploy Railway.
- *
- * Jalankan manual:
- *   php artisan db:seed --class=LaporanKeuanganTambahanSeeder
+ * ada, seeder dilewati.
  */
 class LaporanKeuanganTambahanSeeder extends Seeder
 {
