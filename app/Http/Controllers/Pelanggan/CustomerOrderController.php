@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Carbon\Carbon;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 
 /**
  * CustomerOrderController — Menangani seluruh alur pemesanan pelanggan online.
@@ -507,9 +508,13 @@ class CustomerOrderController extends Controller
             abort(403, 'Aksi tidak diizinkan.');
         }
 
+        // Bug F-1: menu yang boleh diulas DIBATASI ke item pesanan ini,
+        // bukan sekadar 'exists' di tabel menus (cegah ulasan menu yang tak pernah dibeli).
+        $menuIdsInOrder = $order->orderItems->pluck('menu_id')->all();
+
         $validated = $request->validate([
             'reviews'             => ['required', 'array', 'min:1'],
-            'reviews.*.menu_id'   => ['required', 'exists:menus,id'],
+            'reviews.*.menu_id'   => ['required', Rule::in($menuIdsInOrder)],
             'reviews.*.rating'    => ['required', 'integer', 'min:1', 'max:5'],
             'reviews.*.komentar'  => ['nullable', 'string', 'max:500'],
         ]);
