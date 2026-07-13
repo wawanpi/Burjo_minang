@@ -28,7 +28,12 @@ class ReviewController extends Controller
             'rating'  => ['nullable', 'integer', 'min:1', 'max:5'],
         ]);
 
-        $reviews = Review::with(['user', 'menu'])
+        // withTrashed: ulasan untuk menu/akun yang sudah dinonaktifkan (soft delete)
+        // tetap menampilkan nama menu & pemberi ulasan (konsisten Bug #2/#3).
+        $reviews = Review::with([
+                'user' => fn ($q) => $q->withTrashed(),
+                'menu' => fn ($q) => $q->withTrashed(),
+            ])
             ->when($request->menu_id, fn($q) =>
                 $q->where('menu_id', $request->menu_id)
             )
