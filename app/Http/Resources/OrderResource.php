@@ -17,7 +17,8 @@ class OrderResource extends JsonResource
             'total_harga'       => (float) $this->total_harga,
             'status_pesanan'    => $this->status_pesanan,
             'tipe_pesanan'      => $this->tipe_pesanan ?? 'dine_in',
-            'waktu_pengambilan' => $this->waktu_pengambilan,
+            // Bug E-4: format kanonik ISO 8601 dengan offset (+07:00), seragam di semua endpoint
+            'waktu_pengambilan' => $this->waktu_pengambilan ? Carbon::parse($this->waktu_pengambilan)->toIso8601String() : null,
             // Bug E-1: hitung mundur ditampilkan berdasarkan keberadaan waktu_pengambilan,
             // bukan tipe_pesanan === 'online' (nilai 'online' tak pernah dipakai), selaras DashboardController.
             'sisa_menit'        => $this->waktu_pengambilan ? (int) round(now()->diffInMinutes(Carbon::parse($this->waktu_pengambilan), false)) : null,

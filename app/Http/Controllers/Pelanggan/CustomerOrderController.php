@@ -447,7 +447,8 @@ class CustomerOrderController extends Controller
                 'status_pesanan'     => $order->status_pesanan,
                 'tanggal_pesan'      => $order->tanggal_pesan ? Carbon::parse($order->tanggal_pesan)->toISOString() : null,
                 'tipe_pesanan'       => $order->tipe_pesanan,
-                'waktu_pengambilan'  => $order->waktu_pengambilan ? Carbon::parse($order->waktu_pengambilan)->toISOString() : null,
+                // Bug E-4: format kanonik ISO 8601 dengan offset (+07:00), seragam di semua endpoint
+                'waktu_pengambilan'  => $order->waktu_pengambilan ? Carbon::parse($order->waktu_pengambilan)->toIso8601String() : null,
                 'sisa_menit'         => $sisaMenit,
                 'payment'            => $order->payment ? [
                     'metode_pembayaran' => $order->payment->metode_pembayaran,

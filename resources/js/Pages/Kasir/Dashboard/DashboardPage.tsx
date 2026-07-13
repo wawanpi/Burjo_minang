@@ -58,7 +58,9 @@ const renderDeadline = (sisa: number | null, target: string | null) => {
 
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <span className="font-bold text-gray-900 text-sm">{target} WIB</span>
+      <span className="font-bold text-gray-900 text-sm">
+        {new Date(target).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' })} WIB
+      </span>
       <span className={`text-[11px] tracking-wide ${subtitleClass}`}>{subtitleText}</span>
     </div>
   );

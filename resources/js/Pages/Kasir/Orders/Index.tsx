@@ -306,8 +306,8 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
     const formatTanggalShort = (dateStr: string) => {
         if (!dateStr) return '-';
         const d = new Date(dateStr);
-        const tgl = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
-        const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        const tgl = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', timeZone: 'Asia/Jakarta' });
+        const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
         return `${tgl}, ${jam}`;
     };
 
@@ -411,7 +411,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
         // Pesanan dengan waktu pengambilan: tampilkan jam ambil + hitung mundur (Bug E-1)
         if (order.waktu_pengambilan) {
             const d = new Date(order.waktu_pengambilan);
-            const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
             const isUrgent = order.sisa_menit !== null && order.sisa_menit <= 5 && order.sisa_menit > 0;
             return (
                 <div className="space-y-1">
