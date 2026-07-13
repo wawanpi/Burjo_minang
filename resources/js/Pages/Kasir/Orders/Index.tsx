@@ -354,7 +354,6 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
     // ─── FILTERING OPTIONS LOGIC (BUSINESS RULES) ──────────────
     const renderStatusOptions = (order: Order) => {
         const paymentLunas = order.payment?.status_pembayaran === 'lunas';
-        const isOnline = order.tipe_pesanan === 'online';
         const currentStatus = order.status_pesanan;
 
         const options = [
@@ -370,15 +369,10 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
             // Aturan 1: Lunas tidak bisa kembali menunggu pembayaran
             if (paymentLunas && opt.value === 'menunggu_pembayaran') disabled = true;
 
-            // Aturan 2: Online yang masih menunggu pembayaran tidak bisa diproses/selesai manual
-            if (isOnline && currentStatus === 'menunggu_pembayaran') {
-                if (opt.value === 'diproses' || opt.value === 'selesai') disabled = true;
-            }
-
-            // Aturan 3: Jika sedang diproses, tidak bisa kembali ke menunggu_pembayaran
+            // Aturan 2: Jika sedang diproses, tidak bisa kembali ke menunggu_pembayaran
             if (currentStatus === 'diproses' && opt.value === 'menunggu_pembayaran') disabled = true;
 
-            // Pengaman 4: Jika sudah selesai atau batal, menu di-lock secara ketat
+            // Pengaman 3: Jika sudah selesai atau batal, menu di-lock secara ketat
             if (currentStatus === 'selesai' && opt.value !== 'selesai') {
                 if (opt.value === 'menunggu_pembayaran' || opt.value === 'diproses') disabled = true;
             }
@@ -536,9 +530,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
 
     // Chip tipe pesanan (dipakai tabel & kartu)
     const renderTipeChip = (order: Order) => (
-        <span className={`inline-flex items-center text-[10px] uppercase font-bold px-1.5 py-0.5 rounded tracking-wide ${
-            order.tipe_pesanan === 'online' ? 'bg-purple-100 text-purple-700' : 'bg-gray-100 text-gray-600'
-        }`}>
+        <span className="inline-flex items-center text-[10px] uppercase font-bold px-1.5 py-0.5 rounded tracking-wide bg-gray-100 text-gray-600">
             {order.tipe_pesanan === 'dine_in'
                 ? `DINE IN (${order.jumlah_orang || 1} ORANG)`
                 : order.tipe_pesanan.replace('_', ' ')}
