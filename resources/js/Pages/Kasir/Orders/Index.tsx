@@ -245,7 +245,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
             let isWarning = false;
             let isDanger = false;
 
-            if (order.tipe_pesanan === 'online' && order.sisa_menit !== null) {
+            if (order.waktu_pengambilan && order.sisa_menit !== null) {
                 // Online: <= 5 mins & > 0 mins -> danger
                 if (order.sisa_menit <= 5 && order.sisa_menit > 0) {
                     isDanger = true;
@@ -283,7 +283,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
             return 'hover:bg-bm-cream transition-colors duration-150';
 
         if (order.status_pesanan === 'diproses') {
-            if (order.tipe_pesanan === 'online' && order.sisa_menit !== null) {
+            if (order.waktu_pengambilan && order.sisa_menit !== null) {
                 if (order.sisa_menit <= 5 && order.sisa_menit > 0) {
                     return 'bg-red-50 border-l-4 border-red-500 hover:bg-red-100/70 transition-colors duration-150';
                 }
@@ -315,7 +315,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
     const getCardStyle = (order: Order) => {
         const base = 'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated';
         if (order.status_pesanan === 'diproses') {
-            if (order.tipe_pesanan === 'online' && order.sisa_menit !== null) {
+            if (order.waktu_pengambilan && order.sisa_menit !== null) {
                 if (order.sisa_menit <= 5 && order.sisa_menit > 0)
                     return `${base} border-red-300 bg-red-50 ring-1 ring-red-200`;
             } else if (order.tipe_pesanan !== 'online' && order.durasi_menit !== null) {
@@ -408,8 +408,8 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
 
     // ─── Kolom Jam Ambil (jam + timer badge) ────────────────────────────────────
     const renderJamAmbil = (order: Order) => {
-        // Online orders: tampilkan waktu_pengambilan + sisa menit
-        if (order.tipe_pesanan === 'online' && order.waktu_pengambilan) {
+        // Pesanan dengan waktu pengambilan: tampilkan jam ambil + hitung mundur (Bug E-1)
+        if (order.waktu_pengambilan) {
             const d = new Date(order.waktu_pengambilan);
             const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             const isUrgent = order.sisa_menit !== null && order.sisa_menit <= 5 && order.sisa_menit > 0;
