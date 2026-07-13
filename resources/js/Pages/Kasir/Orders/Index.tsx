@@ -246,8 +246,8 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
             let isDanger = false;
 
             if (order.waktu_pengambilan && order.sisa_menit !== null) {
-                // Online: <= 5 mins & > 0 mins -> danger
-                if (order.sisa_menit <= 5 && order.sisa_menit > 0) {
+                // Ada waktu ambil: <= 5 menit lagi ATAU sudah lewat (negatif) -> danger
+                if (order.sisa_menit <= 5) {
                     isDanger = true;
                 }
             } else if (!order.waktu_pengambilan && order.durasi_menit !== null) {
@@ -284,7 +284,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
 
         if (order.status_pesanan === 'diproses') {
             if (order.waktu_pengambilan && order.sisa_menit !== null) {
-                if (order.sisa_menit <= 5 && order.sisa_menit > 0) {
+                if (order.sisa_menit <= 5) {
                     return 'bg-red-50 border-l-4 border-red-500 hover:bg-red-100/70 transition-colors duration-150';
                 }
             } else if (!order.waktu_pengambilan && order.durasi_menit !== null) {
@@ -316,7 +316,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
         const base = 'transition-all duration-200 hover:-translate-y-0.5 hover:shadow-elevated';
         if (order.status_pesanan === 'diproses') {
             if (order.waktu_pengambilan && order.sisa_menit !== null) {
-                if (order.sisa_menit <= 5 && order.sisa_menit > 0)
+                if (order.sisa_menit <= 5)
                     return `${base} border-red-300 bg-red-50 ring-1 ring-red-200`;
             } else if (!order.waktu_pengambilan && order.durasi_menit !== null) {
                 if (order.durasi_menit >= 15)
@@ -406,20 +406,22 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
         if (order.waktu_pengambilan) {
             const d = new Date(order.waktu_pengambilan);
             const jam = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' });
-            const isUrgent = order.sisa_menit !== null && order.sisa_menit <= 5 && order.sisa_menit > 0;
+            const sisa = order.sisa_menit;
+            const isLate = sisa !== null && sisa <= 0;              // sudah lewat waktu ambil
+            const isUrgent = sisa !== null && sisa <= 5 && sisa > 0; // < 5 menit lagi
             return (
                 <div className="space-y-1">
                     <div className="text-sm font-bold text-gray-900 whitespace-nowrap">
                         {jam} <span className="text-gray-400 font-normal text-xs">WIB</span>
                     </div>
-                    {order.sisa_menit !== null && order.status_pesanan === 'diproses' && (
+                    {sisa !== null && order.status_pesanan === 'diproses' && (
                         <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap ${
-                            isUrgent ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-sky-50 text-sky-700'
+                            (isLate || isUrgent) ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-sky-50 text-sky-700'
                         }`}>
                             <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l2.5 2.5M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            Sisa {Math.round(order.sisa_menit)} mnt
+                            {isLate ? `Terlambat ${Math.abs(Math.round(sisa))} mnt` : `Sisa ${Math.round(sisa)} mnt`}
                         </span>
                     )}
                 </div>
