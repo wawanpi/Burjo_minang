@@ -382,10 +382,9 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
             // Aturan 2: Jika sedang diproses, tidak bisa kembali ke menunggu_pembayaran
             if (currentStatus === 'diproses' && opt.value === 'menunggu_pembayaran') disabled = true;
 
-            // Pengaman 3: Jika sudah selesai atau batal, menu di-lock secara ketat
-            if (currentStatus === 'selesai' && opt.value !== 'selesai') {
-                if (opt.value === 'menunggu_pembayaran' || opt.value === 'diproses') disabled = true;
-            }
+            // Pengaman 3 (FR-B3): status FINAL dikunci total — selesai & batal
+            // tidak bisa diubah ke status apa pun (konsisten dengan guard backend).
+            if (currentStatus === 'selesai' && opt.value !== 'selesai') disabled = true;
             if (currentStatus === 'batal' && opt.value !== 'batal') disabled = true;
 
             if (opt.value === currentStatus) disabled = false; // Current status is always visible/selected

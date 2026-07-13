@@ -106,6 +106,7 @@ class OrderManagementController extends Controller
      * Memperbarui status pesanan secara manual oleh kasir.
      *
      * Terdapat beberapa validasi keamanan (security gate):
+     * 0. 'selesai' & 'batal' adalah status FINAL — tidak dapat diubah lagi.
      * 1. Mencegah rollback status yang sudah lunas/selesai.
      * 2. Mencegah kasir mengubah status pembayaran digital yang masih pending
      *    (hanya webhook Midtrans yang boleh).
@@ -125,6 +126,16 @@ class OrderManagementController extends Controller
         $paymentStatus = $order->payment ? $order->payment->status_pembayaran : null;
 
         // --- BACKEND SECURITY VALIDATION ---
+        // FR-B3 (0). Status FINAL tidak boleh diubah lagi. Mencegah transisi mundur/
+        // loncat ilegal (mis. selesai→batal yang me-restock & menghapus pendapatan,
+        // atau batal→diproses/selesai yang menyebabkan overselling / order batal jadi
+        // lunas). Konsisten dengan state machine webhook Midtrans.
+        if (in_array($currentStatus, ['selesai', 'batal'], true) && $newStatus !== $currentStatus) {
+            return redirect()
+                ->back()
+                ->with('error', 'Aksi ilegal! Pesanan sudah final (selesai/batal) dan statusnya tidak dapat diubah lagi.');
+        }
+
         // 1. Cegah perubahan kembali ke menunggu_pembayaran jika sudah lunas / selesai
         if ($newStatus === 'menunggu_pembayaran') {
             if ($currentStatus === 'selesai' || $paymentStatus === 'lunas') {
