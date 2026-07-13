@@ -159,10 +159,12 @@ class PosController extends Controller
             return $order;
         });
 
-        // Return redirect dengan flash message berisi nominal kembalian
+        // Return redirect dengan flash message berisi nominal kembalian.
+        // Bug G-1: kembalian dihitung dari total AMAN (order->total_harga dari DB),
+        // bukan total_harga kiriman frontend yang bisa basi/dimanipulasi.
         return redirect()
             ->route('kasir.pos.index')
-            ->with('success', "Transaksi Tunai #$order->id Berhasil! Uang Kembalian: Rp " . number_format($validated['uang_diterima'] - $validated['total_harga'], 0, ',', '.'));
+            ->with('success', "Transaksi Tunai #$order->id Berhasil! Uang Kembalian: Rp " . number_format($validated['uang_diterima'] - $order->total_harga, 0, ',', '.'));
     }
 
     /**
