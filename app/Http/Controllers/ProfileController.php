@@ -91,6 +91,13 @@ class ProfileController extends Controller
 
         Auth::logout();
 
+        // Bug F-2b (Opsi A): lepas email & no_hp sebelum soft delete agar bisa
+        // dipakai lagi (keduanya unik di level DB, baris soft-deleted tetap ada).
+        $user->update([
+            'email' => $user->email . '.deleted.' . $user->id,
+            'no_hp' => null,
+        ]);
+
         $user->delete();
 
         $request->session()->invalidate();

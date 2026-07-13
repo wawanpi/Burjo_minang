@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Owner;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
@@ -126,12 +127,23 @@ class AccountController extends Controller
      * mengisi deleted_at tanpa memicu cascade fisik pada orders/payments.
      * Data transaksi historis milik akun tetap utuh untuk laporan keuangan,
      * dan akun yang dinonaktifkan otomatis tidak bisa login lagi.
+     *
+     * Bug F-2b (Opsi A): email & no_hp unik di level DB, dan baris soft-deleted
+     * tetap ada — tanpa penanganan, email/no_hp akun nonaktif terkunci permanen.
+     * Karena itu kontak dilepas saat dinonaktifkan: email diberi penanda unik
+     * dan no_hp di-null-kan, agar bisa dipakai lagi oleh akun baru.
      */
     public function destroy(User $account)
     {
         abort_if($account->role === 'owner', 403);
 
-        $account->delete(); // soft delete (mengisi deleted_at)
+        DB::transaction(function () use ($account) {
+            $account->update([
+                'email' => $account->email . '.deleted.' . $account->id,
+                'no_hp' => null,
+            ]);
+            $account->delete(); // soft delete (mengisi deleted_at)
+        });
 
         return redirect()
             ->route('owner.accounts.index')
