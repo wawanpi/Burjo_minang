@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage, usePoll } from '@inertiajs/react';
 import OwnerLayout from '@/Layouts/OwnerLayout';
 
 // ─── Web Audio API Helper ──────────────────────────────────────────────────────
@@ -210,6 +210,16 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
     const { flash } = usePage().props as any;
     const [selectedStatus, setSelectedStatus] = useState(filters?.status || '');
     const [activeTab, setActiveTab] = useState<'hari_ini' | 'po'>('hari_ini');
+
+    // ─── FR-B2: Auto-refresh near-real-time (tanpa full page reload) ───────────
+    // Inertia usePoll melakukan partial reload hanya untuk data pesanan tiap 15 dtk,
+    // mempertahankan state (pencarian, tab, modal, penanda alarm) & posisi scroll.
+    // usePoll otomatis mengurangi frekuensi saat tab di background → hemat server.
+    usePoll(15000, {
+        only: ['pesanan_hari_ini', 'pesanan_po_mendatang'],
+        preserveScroll: true,
+        preserveState: true,
+    });
     
     // ─── AUDIO ALERTS STATE ────────────────────────────────────────────────────
     const [alerted10Min, setAlerted10Min] = useState<number[]>([]);

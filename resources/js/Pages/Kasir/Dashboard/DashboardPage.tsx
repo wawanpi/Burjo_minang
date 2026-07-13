@@ -1,4 +1,5 @@
 // resources/js/Pages/Kasir/Dashboard/DashboardPage.tsx
+import { usePoll } from '@inertiajs/react';
 import OwnerLayout from '@/Layouts/OwnerLayout';
 import StatCard from '@/Components/Owner/StatCard';
 
@@ -120,6 +121,13 @@ const IconHariIni = () => (
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function DashboardPage({ stats, antrean_terbaru }: Props) {
+  // FR-B2: auto-refresh antrean & statistik near-real-time (partial reload, tanpa full reload)
+  usePoll(15000, {
+    only: ['stats', 'antrean_terbaru'],
+    preserveScroll: true,
+    preserveState: true,
+  });
+
   const cards: StatCardData[] = [
     {
       label: 'Pesanan Diproses',
