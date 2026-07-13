@@ -59,7 +59,9 @@ class DashboardController extends Controller
                     'total'             => (int) $o->total_harga,
                     // Bug E-4: format kanonik ISO 8601 dengan offset, diformat ke jam WIB di frontend
                     'waktu_pengambilan' => $o->waktu_pengambilan ? Carbon::parse($o->waktu_pengambilan)->toIso8601String() : null,
-                    'sisa_menit'        => $o->waktu_pengambilan
+                    // Selaras dgn sisi pelanggan: hitung mundur hanya untuk pesanan 'diproses'
+                    // (tidak tampil untuk menunggu_pembayaran/batal/selesai).
+                    'sisa_menit'        => $o->waktu_pengambilan && $o->status_pesanan === 'diproses'
                         ? (int) round(now('Asia/Jakarta')->diffInMinutes(Carbon::parse($o->waktu_pengambilan, 'Asia/Jakarta'), false))
                         : null,
                 ]);
