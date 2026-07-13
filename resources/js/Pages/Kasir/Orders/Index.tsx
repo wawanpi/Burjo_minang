@@ -250,7 +250,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
                 if (order.sisa_menit <= 5 && order.sisa_menit > 0) {
                     isDanger = true;
                 }
-            } else if (order.tipe_pesanan !== 'online' && order.durasi_menit !== null) {
+            } else if (!order.waktu_pengambilan && order.durasi_menit !== null) {
                 // Offline: >= 15 mins -> danger, == 10 mins (atau >= 10 and < 15) -> warning
                 if (order.durasi_menit >= 15) {
                     isDanger = true;
@@ -287,7 +287,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
                 if (order.sisa_menit <= 5 && order.sisa_menit > 0) {
                     return 'bg-red-50 border-l-4 border-red-500 hover:bg-red-100/70 transition-colors duration-150';
                 }
-            } else if (order.tipe_pesanan !== 'online' && order.durasi_menit !== null) {
+            } else if (!order.waktu_pengambilan && order.durasi_menit !== null) {
                 if (order.durasi_menit >= 15) {
                     return 'bg-red-50 border-l-4 border-red-500 hover:bg-red-100/70 transition-colors duration-150';
                 } else if (order.durasi_menit >= 10) {
@@ -318,7 +318,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
             if (order.waktu_pengambilan && order.sisa_menit !== null) {
                 if (order.sisa_menit <= 5 && order.sisa_menit > 0)
                     return `${base} border-red-300 bg-red-50 ring-1 ring-red-200`;
-            } else if (order.tipe_pesanan !== 'online' && order.durasi_menit !== null) {
+            } else if (!order.waktu_pengambilan && order.durasi_menit !== null) {
                 if (order.durasi_menit >= 15)
                     return `${base} border-red-300 bg-red-50 ring-1 ring-red-200`;
                 if (order.durasi_menit >= 10)
@@ -433,7 +433,7 @@ export default function OrderIndex({ pesanan_hari_ini, pesanan_po_mendatang, fil
         }
 
         // Offline orders: tampilkan timer berjalan jika diproses
-        if (order.tipe_pesanan !== 'online' && order.durasi_menit !== null && order.status_pesanan === 'diproses') {
+        if (!order.waktu_pengambilan && order.durasi_menit !== null && order.status_pesanan === 'diproses') {
             const isLate = order.durasi_menit >= 15;
             return (
                 <div className="space-y-1">

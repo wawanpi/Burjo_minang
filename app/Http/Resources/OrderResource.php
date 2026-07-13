@@ -21,7 +21,9 @@ class OrderResource extends JsonResource
             // Bug E-1: hitung mundur ditampilkan berdasarkan keberadaan waktu_pengambilan,
             // bukan tipe_pesanan === 'online' (nilai 'online' tak pernah dipakai), selaras DashboardController.
             'sisa_menit'        => $this->waktu_pengambilan ? (int) round(now()->diffInMinutes(Carbon::parse($this->waktu_pengambilan), false)) : null,
-            'durasi_menit'      => $this->tipe_pesanan !== 'online' ? (int) abs(now()->diffInMinutes(Carbon::parse($this->created_at))) : null,
+            // Bug E-2: timer "berjalan" (elapsed) hanya untuk pesanan TANPA waktu_pengambilan
+            // (dine_in langsung). Pesanan dengan waktu pengambilan memakai sisa_menit (hitung mundur).
+            'durasi_menit'      => !$this->waktu_pengambilan ? (int) abs(now()->diffInMinutes(Carbon::parse($this->created_at))) : null,
             'jumlah_orang'      => $this->jumlah_orang,
             'status_pembayaran' => $this->payment?->status_pembayaran,
             'metode_pembayaran' => $this->payment?->metode_pembayaran,
