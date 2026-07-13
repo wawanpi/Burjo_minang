@@ -56,7 +56,9 @@ class MenuController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'nama_menu'  => ['required', 'string', 'max:255', 'unique:menus,nama_menu'],
+            // Bug F-2: keunikan hanya diperiksa pada menu AKTIF (abaikan yang soft-deleted),
+            // agar nama menu yang sudah dihapus bisa dipakai lagi.
+            'nama_menu'  => ['required', 'string', 'max:255', Rule::unique('menus', 'nama_menu')->whereNull('deleted_at')],
             'kategori'   => ['required', 'string', 'max:100'],
             'harga'      => ['required', 'numeric', 'min:0'],
             'deskripsi'  => ['nullable', 'string', 'max:1000'],
@@ -85,7 +87,7 @@ class MenuController extends Controller
     public function update(Request $request, Menu $menu)
     {
         $validated = $request->validate([
-            'nama_menu'  => ['required', 'string', 'max:255', Rule::unique('menus')->ignore($menu->id)],
+            'nama_menu'  => ['required', 'string', 'max:255', Rule::unique('menus')->ignore($menu->id)->whereNull('deleted_at')],
             'kategori'   => ['required', 'string', 'max:100'],
             'harga'      => ['required', 'numeric', 'min:0'],
             'deskripsi'  => ['nullable', 'string', 'max:1000'],
