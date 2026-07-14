@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '@/Components/ui/Button';
 import Modal from '@/Components/ui/Modal';
 import Input from '@/Components/ui/Input';
@@ -22,6 +22,13 @@ const UserFormModal = ({
     onClose();
   };
 
+  // Anti-autofill kuat: Chrome kadang mengabaikan autoComplete untuk password
+  // tersimpan. Trik: field readonly saat form dibuka (browser tidak mengisi
+  // field readonly), lalu menjadi editable begitu difokuskan/diklik.
+  const [locked, setLocked] = useState(true);
+  useEffect(() => { if (isOpen) setLocked(true); }, [isOpen]);
+  const unlock = () => setLocked(false);
+
   return (
     <Modal
       isOpen={isOpen}
@@ -38,6 +45,8 @@ const UserFormModal = ({
           value={data.name}
           onChange={(e) => setData('name', e.target.value)}
           autoComplete="off"
+          readOnly={locked}
+          onFocus={unlock}
           required
         />
 
@@ -49,6 +58,8 @@ const UserFormModal = ({
           value={data.email}
           onChange={(e) => setData('email', e.target.value)}
           autoComplete="off"
+          readOnly={locked}
+          onFocus={unlock}
           required
         />
 
@@ -65,6 +76,8 @@ const UserFormModal = ({
           error={errors.no_hp}
           placeholder="081234567890"
           autoComplete="off"
+          readOnly={locked}
+          onFocus={unlock}
           required
         />
 
@@ -76,6 +89,8 @@ const UserFormModal = ({
           value={data.password}
           onChange={(e) => setData('password', e.target.value)}
           autoComplete="new-password"
+          readOnly={locked}
+          onFocus={unlock}
           required={!isEditMode}
         />
         
@@ -88,6 +103,8 @@ const UserFormModal = ({
           value={data.password_confirmation}
           onChange={(e) => setData('password_confirmation', e.target.value)}
           autoComplete="new-password"
+          readOnly={locked}
+          onFocus={unlock}
           required={!isEditMode && !!data.password}
         />
 
