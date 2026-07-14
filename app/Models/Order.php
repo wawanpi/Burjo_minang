@@ -5,6 +5,20 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Model Order — merepresentasikan satu transaksi pesanan.
+ *
+ * Kolom kunci:
+ *  - total_harga     : total transaksi (SELALU dihitung ulang dari DB, bukan input frontend)
+ *  - status_pesanan  : menunggu_pembayaran → diproses → selesai / batal (selesai & batal final)
+ *  - tipe_pesanan    : dine_in / take_away
+ *  - waktu_pengambilan, diproses_at (waktu mulai diproses), jumlah_orang
+ *
+ * Relasi:
+ *  - belongsTo User     : pemesan (FK user_id)
+ *  - hasMany  OrderItem : rincian item pesanan
+ *  - hasOne   Payment   : data pembayaran (1 order → 1 payment)
+ */
 class Order extends Model
 {
     use HasFactory;

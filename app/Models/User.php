@@ -15,6 +15,20 @@ use App\Notifications\VerifyEmailNotification;
 // belum ada domain untuk provider email API). Untuk mengaktifkan kembali:
 //   1. tambahkan kembali "implements MustVerifyEmail" di bawah
 //   2. pasang kembali middleware 'verified' pada rute pelanggan (routes/web.php)
+/**
+ * Model User — akun pengguna sistem dengan 3 role.
+ *
+ * role: owner (Pemilik) / kasir / pelanggan. Pemilik mewarisi hak akses Kasir
+ * (lihat middleware role:owner,kasir pada routes). Password otomatis di-hash
+ * (cast 'password' => 'hashed' = bcrypt); tidak pernah disimpan plaintext.
+ *
+ * Memakai SoftDeletes: akun yang dinonaktifkan ditandai deleted_at (tidak bisa
+ * login lagi) tanpa menghapus pesanan/pembayaran historisnya.
+ *
+ * Relasi:
+ *  - hasMany Order  : pesanan milik user
+ *  - hasMany Review : ulasan yang ditulis user
+ */
 class User extends Authenticatable // implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */

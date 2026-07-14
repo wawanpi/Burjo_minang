@@ -12,6 +12,15 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
+/**
+ * AccountController — manajemen akun oleh Owner (KHUSUS akun kasir).
+ *
+ * Owner dapat menambah, mencari, mengedit, dan menonaktifkan akun kasir.
+ * Akun pelanggan tidak dikelola di sini (pelanggan mendaftar & mengelola
+ * profilnya sendiri). Guard abort_unless(role === 'kasir') mencegah manipulasi
+ * akun non-kasir lewat URL. Saat dinonaktifkan (soft delete), email & no_hp
+ * dilepas agar bisa dipakai akun baru.
+ */
 class AccountController extends Controller
 {
     /**

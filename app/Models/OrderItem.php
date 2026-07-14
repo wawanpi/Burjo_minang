@@ -5,6 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Model OrderItem — baris rincian pesanan (tabel penghubung Order ↔ Menu).
+ *
+ * Menyimpan snapshot: jumlah & subtotal saat pemesanan, sehingga riwayat harga
+ * tetap akurat meski harga menu berubah kemudian.
+ *
+ * Relasi:
+ *  - belongsTo Order : pesanan induk (FK order_id)
+ *  - belongsTo Menu  : menu yang dipesan (FK menu_id)
+ */
 class OrderItem extends Model
 {
     use HasFactory;

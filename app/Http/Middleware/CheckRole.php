@@ -6,6 +6,18 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
+/**
+ * Middleware CheckRole — otorisasi berbasis role di level ROUTE (bukan hanya UI).
+ *
+ * Dipakai sebagai 'role:owner', 'role:owner,kasir', atau 'role:pelanggan' pada
+ * grup route. Jika role user tidak termasuk daftar yang diizinkan:
+ *  - request browser/Inertia → redirect ke dashboard sesuai role + flash 403
+ *  - request JSON murni       → response 403
+ *
+ * Inilah pertahanan yang mencegah pelanggan mengakses URL kasir/owner secara
+ * manual (mis. ketik /owner/laporan di address bar) — bukan sekadar menyembunyikan
+ * menu di tampilan.
+ */
 class CheckRole
 {
     public function handle(Request $request, Closure $next, string ...$roles): Response
