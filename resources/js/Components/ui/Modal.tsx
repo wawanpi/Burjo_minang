@@ -25,8 +25,8 @@ const Modal = ({ isOpen, title, onClose, children }: ModalProps) => {
         className="absolute inset-0 bg-bm-charcoal-900/50 backdrop-blur-[8px]"
         onClick={onClose}
       />
-      {/* Panel */}
-      <div className="relative z-10 w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-elevated p-6 animate-scale-in">
+      {/* Panel — max-h + overflow agar konten tinggi tidak terpotong (bisa scroll) */}
+      <div className="relative z-10 w-full max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-900 rounded-2xl shadow-elevated p-6 animate-scale-in">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-serif font-bold text-bm-charcoal-900 dark:text-gray-100">{title}</h2>
           <button
