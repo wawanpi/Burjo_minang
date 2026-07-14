@@ -29,7 +29,7 @@ use App\Notifications\VerifyEmailNotification;
  *  - hasMany Order  : pesanan milik user
  *  - hasMany Review : ulasan yang ditulis user
  */
-class User extends Authenticatable // implements MustVerifyEmail
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, SoftDeletes;
@@ -113,5 +113,24 @@ class User extends Authenticatable // implements MustVerifyEmail
     public function sendEmailVerificationNotification(): void
     {
         $this->notify(new VerifyEmailNotification());
+    }
+
+    /**
+     * Tentukan apakah email user dianggap terverifikasi.
+     *
+     * Verifikasi email HANYA ditegakkan bila fitur diaktifkan
+     * (config('features.email_verification') = true, disetel via .env lokal).
+     * Bila fitur OFF (default/produksi), selalu dianggap terverifikasi agar
+     * registrasi/login tidak terkunci saat SMTP tidak tersedia. Ini juga
+     * membuat middleware 'verified' pass-through & mencegah listener
+     * Registered mencoba mengirim email verifikasi di produksi.
+     */
+    public function hasVerifiedEmail(): bool
+    {
+        if (! config('features.email_verification')) {
+            return true;
+        }
+
+        return ! is_null($this->email_verified_at);
     }
 }

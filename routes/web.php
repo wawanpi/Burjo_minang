@@ -96,9 +96,11 @@ Route::middleware(['auth', 'role:owner,kasir'])
 // ║  3. ROUTE PELANGGAN (Customer)                                         ║
 // ║  Hanya role 'pelanggan' yang bisa mengakses                            ║
 // ╚══════════════════════════════════════════════════════════════════════════╝
-// CATATAN: middleware 'verified' dinonaktifkan sementara (lihat App\Models\User).
-// Untuk mewajibkan verifikasi email lagi, tambahkan 'verified' kembali di sini.
-Route::middleware(['auth', 'role:pelanggan'])
+// CATATAN: middleware 'verified' aktif, tapi hanya menegakkan verifikasi bila
+// fitur dinyalakan via .env (EMAIL_VERIFICATION_ENABLED=true, lokal). Di produksi
+// (flag mati) User::hasVerifiedEmail() selalu true → 'verified' pass-through,
+// sehingga pelanggan tidak terkunci saat SMTP tidak tersedia.
+Route::middleware(['auth', 'role:pelanggan', 'verified'])
     ->prefix('customer')
     ->name('customer.')
     ->group(function () {
