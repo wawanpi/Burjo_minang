@@ -28,13 +28,16 @@ const UserFormModal = ({
       title={isEditMode ? 'Edit Pengguna' : 'Tambah Pengguna'}
       onClose={handleClose}
     >
-      <form onSubmit={onSubmit} className="space-y-4">
+      {/* autoComplete off + new-password: cegah browser mengisi kredensial owner
+          yang sedang login ke form tambah/edit akun (autofill login). */}
+      <form onSubmit={onSubmit} className="space-y-4" autoComplete="off">
         <Input
           label="Nama Lengkap"
           placeholder="Budi Santoso"
           error={errors.name}
           value={data.name}
           onChange={(e) => setData('name', e.target.value)}
+          autoComplete="off"
           required
         />
 
@@ -45,6 +48,7 @@ const UserFormModal = ({
           error={errors.email}
           value={data.email}
           onChange={(e) => setData('email', e.target.value)}
+          autoComplete="off"
           required
         />
 
@@ -60,6 +64,7 @@ const UserFormModal = ({
           }}
           error={errors.no_hp}
           placeholder="081234567890"
+          autoComplete="off"
           required
         />
 
@@ -70,6 +75,7 @@ const UserFormModal = ({
           error={errors.password}
           value={data.password}
           onChange={(e) => setData('password', e.target.value)}
+          autoComplete="new-password"
           required={!isEditMode}
         />
         
@@ -81,6 +87,7 @@ const UserFormModal = ({
           error={errors.password_confirmation}
           value={data.password_confirmation}
           onChange={(e) => setData('password_confirmation', e.target.value)}
+          autoComplete="new-password"
           required={!isEditMode && !!data.password}
         />
 
