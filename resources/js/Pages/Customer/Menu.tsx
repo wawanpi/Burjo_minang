@@ -577,8 +577,8 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                 <section className="relative h-screen w-full overflow-hidden">
                     {/* Background Image */}
                     <img
-                        src="https://images.unsplash.com/photo-1563379926898-05f4575a45d8?auto=format&fit=crop&w=1920&q=80"
-                        alt="Sajian masakan Padang"
+                        src="/images/landing/hero-dendeng-balado.jpg"
+                        alt="Dendeng Balado — Sajian khas Burjo Minang"
                         className="absolute inset-0 w-full h-full object-cover scale-110 transition-transform duration-[8000ms] ease-out"
                         style={{
                             objectPosition: 'center 40%',
