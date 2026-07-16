@@ -378,21 +378,22 @@ function MenuSection({ menus }: { menus: FeaturedMenu[] }) {
 function MenuCard({ item, delay }: { item: FeaturedMenu; delay: number }) {
     const ref = useScrollReveal();
 
-    // Build image URL — database images stored in /storage/, fallback to placeholder
-    const imageUrl = item.gambar
-        ? `/storage/${item.gambar}`
-        : 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=600&q=80';
-
     return (
         <div ref={ref} className="reveal group" style={{ transitionDelay: `${delay}ms` }}>
             <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl hover:shadow-[#990000]/10 transition-all duration-500 hover:-translate-y-2">
-                {/* Image */}
-                <div className="relative aspect-[4/3] overflow-hidden">
-                    <img
-                        src={imageUrl}
-                        alt={item.nama_menu}
-                        className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
-                    />
+                {/* Image — placeholder default di belakang; gambar disembunyikan jika file gagal dimuat */}
+                <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-5xl opacity-20">🍽️</span>
+                    </div>
+                    {item.gambar && (
+                        <img
+                            src={`/storage/${item.gambar}`}
+                            alt={item.nama_menu}
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                        />
+                    )}
                     {/* Gradient overlay on hover */}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 

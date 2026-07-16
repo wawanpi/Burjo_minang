@@ -77,17 +77,17 @@ function MenuCard({
         <div ref={ref} className="reveal group" style={{ transitionDelay: `${delay}ms` }}>
             <div className="bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl hover:shadow-[#990000]/10 transition-all duration-500 hover:-translate-y-2 flex flex-col h-full">
                 {/* Image */}
-                <div className="relative aspect-[4/3] overflow-hidden cursor-pointer" onClick={onViewDetail}>
-                    {menu.gambar ? (
+                <div className="relative aspect-[4/3] overflow-hidden cursor-pointer bg-gradient-to-br from-gray-50 to-gray-100" onClick={onViewDetail}>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-5xl opacity-20">🍽️</span>
+                    </div>
+                    {menu.gambar && (
                         <img
                             src={`/storage/${menu.gambar}`}
                             alt={menu.nama_menu}
-                            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
                         />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-                            <span className="text-5xl opacity-20">🍽️</span>
-                        </div>
                     )}
 
                     {/* Gradient overlay on hover */}
@@ -885,17 +885,17 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                                                 key={item.menu.id}
                                                 className="flex gap-4 items-center bg-gray-50 p-3 rounded-2xl border border-gray-100 hover:border-[#990000]/20 hover:bg-[#fff0f0]/50 transition-all duration-300"
                                             >
-                                                <div className="w-16 h-16 bg-white rounded-xl overflow-hidden shrink-0 shadow-sm border border-gray-100">
-                                                    {item.menu.gambar ? (
+                                                <div className="relative w-16 h-16 bg-white rounded-xl overflow-hidden shrink-0 shadow-sm border border-gray-100">
+                                                    <div className="absolute inset-0 flex items-center justify-center text-2xl bg-gray-50 opacity-40">
+                                                        🍽️
+                                                    </div>
+                                                    {item.menu.gambar && (
                                                         <img
                                                             src={`/storage/${item.menu.gambar}`}
-                                                            className="w-full h-full object-cover"
+                                                            className="absolute inset-0 w-full h-full object-cover"
                                                             alt={item.menu.nama_menu}
+                                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
                                                         />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-2xl bg-gray-50">
-                                                            🍽️
-                                                        </div>
                                                     )}
                                                 </div>
                                                 <div className="flex-1 min-w-0">
@@ -1319,17 +1319,17 @@ export default function CustomerMenu({ menus, kategoriList }: Props) {
                             </button>
 
                             {/* Image */}
-                            <div className="relative aspect-[16/9] overflow-hidden">
-                                {selectedMenu.gambar ? (
+                            <div className="relative aspect-[16/9] overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-7xl opacity-20">🍽️</span>
+                                </div>
+                                {selectedMenu.gambar && (
                                     <img
                                         src={`/storage/${selectedMenu.gambar}`}
                                         alt={selectedMenu.nama_menu}
-                                        className="w-full h-full object-cover"
+                                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                        className="absolute inset-0 w-full h-full object-cover"
                                     />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-                                        <span className="text-7xl opacity-20">🍽️</span>
-                                    </div>
                                 )}
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
