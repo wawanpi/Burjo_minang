@@ -27,17 +27,17 @@ interface Props {
 // ─── Data ────────────────────────────────────────────────────────────────────
 const HERO_SLIDES = [
     {
-        image: 'https://images.unsplash.com/photo-1563379926898-05f4575a45d8?auto=format&fit=crop&w=1920&q=80',
+        image: '/images/landing/hero-jengkol-balado.jpg',
         title: 'Cita Rasa Autentik',
         subtitle: 'Minang',
     },
     {
-        image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1920&q=80',
+        image: '/images/landing/hero-ikan-bakar.jpg',
         title: 'Sajian Terbaik',
         subtitle: 'Nusantara',
     },
     {
-        image: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1920&q=80',
+        image: '/images/landing/hero-dendeng-balado.jpg',
         title: 'Warisan Kuliner',
         subtitle: 'Padang',
     },
@@ -278,16 +278,16 @@ function AboutSection() {
                             {/* Main image */}
                             <div className="rounded-3xl overflow-hidden shadow-2xl shadow-[#990000]/10 aspect-[4/5]">
                                 <img
-                                    src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80"
-                                    alt="Interior restoran Burjo Minang"
+                                    src="/images/landing/tentang-ayam-balado.jpg"
+                                    alt="Ayam balado khas Burjo Minang"
                                     className="w-full h-full object-cover"
                                 />
                             </div>
                             {/* Floating accent image */}
                             <div className="absolute -bottom-8 -left-8 w-40 h-40 lg:w-52 lg:h-52 rounded-2xl overflow-hidden shadow-xl border-4 border-gray-50 animate-float hidden sm:block">
                                 <img
-                                    src="https://images.unsplash.com/photo-1600803907087-f56d462fd26b?auto=format&fit=crop&w=400&q=80"
-                                    alt="Nasi Padang lezat"
+                                    src="/images/landing/tentang-cumi-hijau.jpg"
+                                    alt="Cumi sambal hijau khas Burjo Minang"
                                     className="w-full h-full object-cover"
                                 />
                             </div>
