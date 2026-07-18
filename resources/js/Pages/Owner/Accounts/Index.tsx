@@ -92,7 +92,7 @@ export default function Index({ users, filters }: Props) {
   };
 
   const handleDelete = (user: User) => {
-    if (!window.confirm(`Hapus pengguna "${user.name}"? Tindakan ini tidak dapat dibatalkan.`)) return;
+    if (!window.confirm(`Hapus kasir "${user.name}"? Tindakan ini tidak dapat dibatalkan.`)) return;
 
     // Delete data via Inertia
     router.delete(`/owner/accounts/${user.id}`, {
@@ -108,7 +108,7 @@ export default function Index({ users, filters }: Props) {
         {/* Header */}
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <span className="bm-eyebrow block mb-1.5">Pengguna Sistem</span>
+            <span className="bm-eyebrow block mb-1.5">Kasir Sistem</span>
             <div className="flex items-center gap-2.5">
               <span className="text-bm-gold-500 text-lg leading-none select-none">✦</span>
               <h1 className="text-2xl lg:text-[28px] font-serif font-bold text-bm-charcoal-900 leading-tight">Manajemen Akun</h1>
@@ -147,7 +147,7 @@ export default function Index({ users, filters }: Props) {
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
-              Tambah Pengguna
+              Tambah Kasir
             </Button>
           </div>
         </div>

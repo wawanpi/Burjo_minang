@@ -53,7 +53,7 @@ const UserTable = ({ users, onEdit, onDelete, isDeleting = null, searchTerm }: U
         <p className="font-serif italic text-lg text-bm-charcoal-800">
           {searchTerm
             ? `Tidak ada akun yang cocok dengan "${searchTerm}"`
-            : 'Belum ada data pengguna.'}
+            : 'Belum ada data kasir.'}
         </p>
       </div>
     );

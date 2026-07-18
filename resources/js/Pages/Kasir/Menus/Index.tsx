@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react';
+import { createPortal } from 'react-dom';
 import { Head, router, useForm, usePage } from '@inertiajs/react';
 import OwnerLayout from '@/Layouts/OwnerLayout';
 
@@ -393,15 +394,17 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
             </div>
 
             {/* ─── Modal Form Tambah/Edit ────────────────────────────── */}
-            {isModalOpen && (
-                <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+            {isModalOpen && createPortal(
+                <div className="fixed inset-0 z-[9999] overflow-y-auto">
                     {/* Backdrop */}
                     <div
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
                         onClick={closeModal}
                     />
-                    {/* Panel */}
-                    <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-xl p-6 animate-modal-in">
+                    {/* Wrapper — flex + min-h-full agar centering aman */}
+                    <div className="flex min-h-full items-center justify-center p-4">
+                        {/* Panel */}
+                        <div className="relative z-10 w-full max-w-md bg-white rounded-2xl shadow-xl p-6 animate-modal-in">
                         <div className="flex items-center justify-between mb-5">
                             <h2 className="text-xl font-serif font-bold text-bm-charcoal-900">
                                 {editingMenu ? 'Edit Menu' : 'Tambah Menu Baru'}
@@ -552,7 +555,9 @@ export default function MenuIndex({ menus, kategoriList, filters }: Props) {
                             </div>
                         </form>
                     </div>
-                </div>
+                    </div>
+                </div>,
+                document.body
             )}
 
             <style dangerouslySetInnerHTML={{ __html: `

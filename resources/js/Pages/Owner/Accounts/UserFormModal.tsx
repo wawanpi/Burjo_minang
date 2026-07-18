@@ -32,7 +32,7 @@ const UserFormModal = ({
   return (
     <Modal
       isOpen={isOpen}
-      title={isEditMode ? 'Edit Pengguna' : 'Tambah Pengguna'}
+      title={isEditMode ? 'Edit Kasir' : 'Tambah Kasir'}
       onClose={handleClose}
     >
       {/* autoComplete off + new-password: cegah browser mengisi kredensial owner
@@ -113,7 +113,7 @@ const UserFormModal = ({
             Batal
           </Button>
           <Button type="submit" isLoading={processing}>
-            {isEditMode ? 'Simpan Perubahan' : 'Tambah Pengguna'}
+            {isEditMode ? 'Simpan Perubahan' : 'Tambah Kasir'}
           </Button>
         </div>
       </form>
