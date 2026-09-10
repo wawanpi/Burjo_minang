@@ -348,22 +348,10 @@ Proyek ini sudah dikonfigurasi untuk Railway:
 
 ---
 
-## 🌐 Live Demo
 
-`[BUTUH INFO]` — Tambahkan URL live demo jika aplikasi sudah di-deploy.
 
 ---
 
-## 👨‍💻 Developer
-
-`[BUTUH INFO]`
-
-Silakan lengkapi:
-- Nama lengkap
-- Informasi universitas / program studi
-- Link profil GitHub
-- Link profil LinkedIn
-- Link portfolio (jika tersedia)
 
 ---
 
