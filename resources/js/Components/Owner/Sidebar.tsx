@@ -45,7 +45,7 @@ const navItems: NavItem[] = [
         ),
     },
     {
-        label: "Laporan",
+        label: "Laporan Keuangan",
         href: "/owner/laporan",
         ownerOnly: true,
         icon: (

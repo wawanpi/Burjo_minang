@@ -311,7 +311,7 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
   });
 
   return (
-    <OwnerLayout title="Laporan">
+    <OwnerLayout title="Laporan Keuangan">
       <div className="space-y-6">
 
         {/* ═══════════════════════════════════════════════════
@@ -322,7 +322,7 @@ export default function Index({ orders, ringkasan, filters, tab }: Props) {
             <span className="bm-eyebrow block mb-1.5">Audit & Keuangan</span>
             <div className="flex items-center gap-2.5">
               <span className="text-bm-gold-500 text-lg leading-none select-none">✦</span>
-              <h1 className="text-2xl lg:text-[28px] font-serif font-bold text-bm-charcoal-900 leading-tight">Laporan</h1>
+              <h1 className="text-2xl lg:text-[28px] font-serif font-bold text-bm-charcoal-900 leading-tight">Laporan </h1>
             </div>
             <div className="bm-gold-underline mt-3" />
             <p className="text-sm text-bm-text-muted mt-2">
